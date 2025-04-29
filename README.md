@@ -117,7 +117,8 @@ Key algorithmic advancements include:
 The tool demonstrates particular strength in identifying complex rearrangements that most existing algorithms miss, including multiple tandem duplications, non-reciprocal translocations, and inversions with two defined boundaries. Its performance has been validated across multiple datasets, showing superior accuracy compared to existing tools like Sniffles2, NanoSV, and SVIM, particularly for variants in repetitive regions and those with low read support.
 
 # Installation
-Prerequisites:
+
+## Prerequisites:
 
     Python 3.7+
 
@@ -129,25 +130,29 @@ Prerequisites:
 
     htslib (v1.21+)
 
-> 💡 Pro tip: Recommended Installation:
-> bash
+    git (for cloning)
 
-# Create and activate conda environment
-conda create -n elarodon python=3.8
+> 💡 Pro tip: see full list of program versions in [requirements.txt](/requirements.txt)
 
-conda activate elarodon
+## 1. Clone the Repository
 
-# Install dependencies
-conda install -c bioconda minimap2 vcfanno samtools
+    git clone https://github.com/aakechin/eLaRodON.git
 
-# Install eLaRodON
-pip install elarodon
+## 2. Install Dependencies
+
+    pip install -r requirements.txt
+
+## 3. Verify Installation
+
+    python3 ./eLaRodON-main/main.py -h
+
+> No errors = successful installation
 
 # Quick Start
 
 ### Basic Pipeline Execution
-```bash
-elarodon \
+```python
+python3 main.py \
     -dir ./results_elarodon \
     -bam sample.bam \
     -ref hg38.fa \
@@ -199,8 +204,8 @@ elarodon \
 
 *To view all parameters and their descriptions, you can use* 
 
-```bash
-elarodon -h
+```python
+python3 main.py -h
 ```
 
 # Output Files
@@ -230,8 +235,8 @@ samtools index sample.bam
 ```
 
 Full Analysis
-```bash
-elarodon \
+```python
+python3 main.py \
     -bam sample.bam \
     -dir lr_results \
     -ref hg38.fa \
