@@ -97,8 +97,8 @@ The final output includes:
     - Intersection sequences (ISMFS tag)
     - Novel inserted sequences (NSMFS tag)
     - Microhomology/homeology patterns
-
     - Repeat element proximity
+
 #### 2. Additional Outputs:
 
 - Raw junction calls for downstream analysis
@@ -177,9 +177,8 @@ python3 main.py \
 
 |Parameter	| Default	 | Required | Description |
 | :---        |    :----:   |  :----:   |        ---: |
-|`-chr, --chromosome`|	all| No |	Target chromosome |
-|`-start, --start`|	None	| No |Start position|
-|`-end, --end`|	None|	No| End position|
+|`-div, --divide-chroms`|	False | No |	Divide chromosome to analyze |
+|`-dvlen, --div-length`|	None | No |	Length of regions for division chromosome to analyze |
 |`-len, --minimal-length`|	50| No |Min variant length (bp)|
 |`-clip`, `--minimal-clipped-length`|	100	| No | Min clipped length (bp)|
 |`-dist`,`-dist-to-join-trl`|	1000	| No | Min clipped length (bp)|
