@@ -1,3 +1,4 @@
+from read_bam_file import BamReader
 from ONTLRcaller import ONTLRCaller
 from joinONTLRs import JoinLR
 from alignment_INS import InsertionProcessor
@@ -6,7 +7,7 @@ import argparse
 from multiprocessing import cpu_count
 import glob
 import os
-# import ONTLRcaller_old as ontlr
+import sys
 
 
 if __name__ == '__main__':
@@ -22,18 +23,14 @@ if __name__ == '__main__':
                     dest='bamFile', type=str,
                     help='full path to BAM file with NGS reads',
                     required=True)
-    par.add_argument('--chromosome', '-chr',
-                    dest='chrom', type=str,
-                    help='chromosome to analyze. Default: all chromosomes',
+    par.add_argument('--divide-chroms', '-div',
+                    dest='div_chroms', action='store_true', default=False,
+                    help='Divide chromosome to analyze. Default: all chromosomes',
                     required=False)
-    par.add_argument('--start', '-start',
-                    dest='start', type=int,
-                    help='start coordinate for extracting reads. Default: whole chromosome or whole genome',
-                    required=False, default=None)
-    par.add_argument('--end', '-end',
-                    dest='end', type=int,
-                    help='end coordinate for extracting reads. Default: whole chromosome or whole genome',
-                    required=False, default=None)
+    par.add_argument('--div-length', '-dvlen',
+                    dest='len_division', type=int, default=0,
+                    help='Length of regions for division chromosome to analyze',
+                    required=False)
     par.add_argument('--minimal-length', '-len',
                     dest='minVarLen', type=int,
                     help='minimal acceptable length of variant (for InDels). Default: 50',
@@ -106,10 +103,36 @@ if __name__ == '__main__':
     
     args=par.parse_args()
 
+    def check_path(path, arg_name):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"ERROR: {arg_name} does not exist: {path}")
+        return path
+
+    try:
+        check_path(args.bamFile, "--bam-file")
+        check_path(args.refGen, "--ref-genome")
+        check_path(args.VCFanno, "--vcf_anno")
+        check_path(args.bedFile, "--bed_file")
+
+        if not os.path.isdir(args.workDir):
+            os.makedirs(args.workDir, exist_ok=True)
+            os.makedirs(os.path.join(args.workDir, 'supplemetary'), exist_ok=True)
+            print(f"NOTE: Created working directory at {args.workDir}")
+        
+        if args.div_chroms and args.len_division <= 0:
+            print('ERROR: Set the fragment size value for chromosome division!')
+            print('Use --div-length or -dvlen with positive integer value')
+            sys.exit(1)
+            
+    except FileNotFoundError as e:
+        print(str(e))
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        sys.exit(1)
+
     bam_file_name = args.bamFile.split('/')[-1][:-4]
-    if not os.path.isdir(args.workDir):
-        os.mkdir(args.workDir)
-    bam_results_path = args.workDir + '/' + bam_file_name
+    bam_results_path = args.workDir +'/supplemetary/' + bam_file_name 
 
     if not hasattr(args, 'inFiles') or args.inFiles is None:
         args.inFiles = bam_results_path+'.junction_stat.*.*ions.csv'
@@ -124,33 +147,46 @@ if __name__ == '__main__':
     if not hasattr(args, 'insFile') or args.insFile is None:
         args.insFile = bam_results_path +'.junction_stat.INS_join100_mapped_ins.csv'
     if not hasattr(args, 'outVCF') or args.outVCF is None:
-        args.outVCF = bam_results_path+'_all_LGRS.vcf'
-
-    # print(args)
+        args.outVCF = args.workDir + '/' + bam_file_name + '_all_LGRS.vcf'
 
     # ONTLRcaller
     print()
     print('=== ONTLRcaller ===')
-    ontc=ONTLRCaller(args.bamFile,
-                     args.chrom,
-                     args.start,
-                     args.end,
-                     args.threads,
-                     args.minVarLen,
-                     args.minClipLen,
-                     args.distToJoinTrl)
-    ontc.readBamFile()
-    # without class
-    # ontlr.readBamFile(args.bamFile,
-    #                  args.chrom,
-    #                  args.start,
-    #                  args.end,
-    #                  args.threads,
-    #                  args.minVarLen,
-    #                  args.minClipLen,
-    #                  args.distToJoinTrl)
-    print()
-    print('ONTLRcaller finished')
+    
+    bamreader = BamReader(args.bamFile, args.threads)
+    chromosomes_dict = bamreader.read_bam()
+    # we analyze only main chomosomes for human genome
+    chom_list = set(chromosomes_dict.keys())
+    chrom_intersection_v1 = chom_list & {'chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX', 'chrY', 'chrM'}
+    chrom_intersection_v2 = chom_list & {'1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X', 'Y', 'M'}
+    if len(chrom_intersection_v1) == 25:
+        chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v1}
+    elif len(chrom_intersection_v2) == 25:
+        chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v2}
+    for chrom, chrom_len in chromosomes_dict.items():
+        if args.div_chroms == False:
+            ontc=ONTLRCaller(args.bamFile,
+                            chrom,
+                            args.start,
+                            args.end,
+                            args.threads,
+                            args.minVarLen,
+                            args.minClipLen,
+                            args.distToJoinTrl)
+            ontc.readBamFile()
+        else:
+            n = args.len_division
+            for start in range(1, chrom_len, n):
+                end = min(start + n, chrom_len)
+                ontc=ONTLRCaller(args.bamFile,
+                                chrom,
+                                start,
+                                end,
+                                args.threads,
+                                args.minVarLen,
+                                args.minClipLen,
+                                args.distToJoinTrl)
+                ontc.readBamFile()
 
     #joinONTLRs
     print()
@@ -181,7 +217,7 @@ if __name__ == '__main__':
                                             args.threads, 
                                             args.notRemoveTrashAlign)
     alignINS_processor.read_insertions()
-    fasta_file = args.nameINS + '_insertions.fasta'
+    fasta_file = args.workDir +'/supplemetary/'+ args.nameINS + '_insertions.fasta'
     alignINS_processor.write_fasta(fasta_file)
     alignINS_processor.map_with_minimap2(fasta_file)
     alignINS_processor.analyze_mapping_results()

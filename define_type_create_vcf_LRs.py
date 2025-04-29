@@ -33,10 +33,11 @@ class AnalyzeLR():
         self.path_vcfanno = args.VCFanno
         # self.path_lua = args.lua_file
         # self.path_toml = args.toml_file
+        temp_path = args.workDir +'/supplemetary/'
         self.path_bed = args.bedFile
         self.threads = args.threads
         self.name_sample = self.path_to_junc_file[self.path_to_junc_file.rfind('/')+1:self.path_to_junc_file.find('.')]
-        self.temp_dir = 'temp_'+self.path_vcf_out.split('/')[-1][:-4]
+        self.temp_dir = temp_path+'temp_'+self.path_vcf_out.split('/')[-1][:-4]
         self.temp_vcf_file_pos1 = self.temp_dir+'/temp1_' + self.path_vcf_out.split('/')[-1]
         self.temp_vcf_file_pos2 = self.temp_dir+'/temp2_' + self.path_vcf_out.split('/')[-1]
         self.temp_vcf_ann_1 = self.temp_dir+'/res_ann_1_' + self.path_vcf_out.split('/')[-1]

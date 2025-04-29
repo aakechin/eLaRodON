@@ -43,12 +43,7 @@ class ONTLRCaller():
         global outFiles,q
         set_start_method('spawn')
         print('Reading BAM-file...')
-        bam=pysam.AlignmentFile(self.bamFile,'rb',
-                                threads=self.threads)
-        if self.chrom:
-            chromosomes=[self.chrom]
-        else:
-            chromosomes=bam.references        
+        chromosomes=[self.chrom]       
         for chrom in chromosomes:
             if chrom not in self.genomeCoverage.keys():
                 self.genomeCoverage[chrom]=[]

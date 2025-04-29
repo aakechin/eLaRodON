@@ -41,7 +41,7 @@ class InsertionProcessor:
             for ins_id, data in self.insertions.items():
                 # print('data', data)
                 # input()
-                seq_id = str(ins_id)+'_'+data['Chrom']+'_'+str(data['Pos'])+'_'+str(data['Insertion_Length'])
+                seq_id = str(ins_id)+'*'+data['Chrom']+'*'+str(data['Pos'])+'*'+str(data['Insertion_Length'])
                 sequence = SeqRecord(Seq(data['Sequence']), id=seq_id, description='')
                 SeqIO.write(sequence, fasta_file, 'fasta')
         # input('STOP FASTA')
@@ -69,7 +69,7 @@ class InsertionProcessor:
                 # print('parts', parts)
                 # input()
                 read_id = parts[0]
-                ins_id, chrom, coordinate, length = read_id.split('_')
+                ins_id, chrom, coordinate, length = read_id.split('*')
                 ins_id = int(ins_id)
                 coordinate = int(coordinate)
                 length = int(length)
@@ -288,35 +288,21 @@ class InsertionProcessor:
         filtered_df = df[~df.index.isin(self.tandem_duplications_ids)]
         filtered_df.to_csv(output_file, sep='\t', index=False)
 
-def main():
-    parser = argparse.ArgumentParser(description='Process insertions and map them to a reference genome')
-    parser.add_argument('--ins_file', '-ins', help='Path to the CSV-file with insertions', required=True)
-    parser.add_argument('--lr_file', '-lrs', help='Path to the CSV-file with LGRs', required=True)
-    parser.add_argument('--ref_genome', '-ref', help='Path to the reference genome', required=True)
-    parser.add_argument('--name', '-n', help='Name of run', required=True)
-    parser.add_argument('--sam_file', '-sam', help='Optional path to the SAM-file if mapping has already been done', required=False)
-    parser.add_argument("-th", "--threads", type=int, required=False,
-                        help="Number of processes for pool", default=6)
-    parser.add_argument("-nrt", "--not_remove_trash", action='store_true', required=False,
-                        help="Use this parameter if you don't want to remove temporary files (.fasta)",
-                        default=False)
+    # def main(self):
+    #     processor = InsertionProcessor(self.ins_file, self.lr_file, self.ref_genome, self.name, self.sam_file, self.threads, self.not_remove_trash)
+    #     processor.read_insertions()
+    #     fasta_file = self.name + '_insertions.fasta'
+    #     processor.write_fasta(fasta_file)
+    #     processor.map_with_minimap2(fasta_file)
+    #     processor.analyze_mapping_results()
+    #     processor.merge_tandem_duplications()
+    #     processor.copy_file(self.lr_file, self.lr_file[:-4]+'_mapped_ins.csv')
+    #     processor.extract_sequences_before_after()
+    #     processor.update_large_rearrangements_file()
+    #     updated_csv = self.ins_file[:-4]+'_mapped_ins.csv'
+    #     processor.update_original_csv(updated_csv)
 
-    args = parser.parse_args()
-
-    processor = InsertionProcessor(args.ins_file, args.lr_file, args.ref_genome, args.name, args.sam_file, args.threads, args.not_remove_trash)
-    processor.read_insertions()
-    fasta_file = args.name + '_insertions.fasta'
-    processor.write_fasta(fasta_file)
-    processor.map_with_minimap2(fasta_file)
-    processor.analyze_mapping_results()
-    processor.merge_tandem_duplications()
-    processor.copy_file(args.lr_file, args.lr_file[:-4]+'_mapped_ins.csv')
-    processor.extract_sequences_before_after()
-    processor.update_large_rearrangements_file()
-    updated_csv = args.ins_file[:-4]+'_mapped_ins.csv'
-    processor.update_original_csv(updated_csv)
-
-    print('Analysis of INS was done!')
+    #     print('Analysis of INS was done!')
 
 # if __name__ == '__main__':
 #     main()
