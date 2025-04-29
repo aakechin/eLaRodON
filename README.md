@@ -259,6 +259,16 @@ Killed (process exited)
 ```
 **Solution**: Reduce thread count or increase memory
 
+```bash
+Too many open files
+```
+**Solution**: 
+
+Run before eLaRodN: 
+```bash
+ulimit -n 4096
+```
+
 ### BAM index missing:
 ```bash
     [E::idx_find_and_load] Could not retrieve index file for 'sample.bam'
