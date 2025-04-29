@@ -132,11 +132,22 @@ Prerequisites:
 > 💡 Pro tip: Recommended Installation:
 > bash
 
+# Create and activate conda environment
+conda create -n elarodon python=3.8
+
+conda activate elarodon
+
+# Install dependencies
+conda install -c bioconda minimap2 vcfanno samtools
+
+# Install eLaRodON
+pip install elarodon
+
 # Quick Start
 
 ### Basic Pipeline Execution
 ```bash
-python3 main.py \
+elarodon \
     -dir ./results_elarodon \
     -bam sample.bam \
     -ref hg38.fa \
@@ -189,7 +200,7 @@ python3 main.py \
 *To view all parameters and their descriptions, you can use* 
 
 ```bash
-python3 main.py -h
+elarodon -h
 ```
 
 # Output Files
@@ -220,7 +231,7 @@ samtools index sample.bam
 
 Full Analysis
 ```bash
-python3 main.py \
+elarodon \
     -bam sample.bam \
     -dir lr_results \
     -ref hg38.fa \

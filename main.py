@@ -8,6 +8,7 @@ from multiprocessing import cpu_count
 import glob
 import os
 import sys
+from multiprocessing import set_start_method
 
 
 if __name__ == '__main__':
@@ -152,7 +153,7 @@ if __name__ == '__main__':
     # ONTLRcaller
     print()
     print('=== ONTLRcaller ===')
-    
+    set_start_method('spawn')
     bamreader = BamReader(args.bamFile, args.threads)
     chromosomes_dict = bamreader.read_bam()
     # we analyze only main chomosomes for human genome
@@ -167,12 +168,13 @@ if __name__ == '__main__':
         if args.div_chroms == False:
             ontc=ONTLRCaller(args.bamFile,
                             chrom,
-                            args.start,
-                            args.end,
+                            None,
+                            None,
                             args.threads,
                             args.minVarLen,
                             args.minClipLen,
-                            args.distToJoinTrl)
+                            args.distToJoinTrl,
+                            args.workDir +'/supplemetary/')
             ontc.readBamFile()
         else:
             n = args.len_division
@@ -185,7 +187,8 @@ if __name__ == '__main__':
                                 args.threads,
                                 args.minVarLen,
                                 args.minClipLen,
-                                args.distToJoinTrl)
+                                args.distToJoinTrl,
+                                args.workDir +'/supplemetary/')
                 ontc.readBamFile()
 
     #joinONTLRs

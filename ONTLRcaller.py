@@ -16,14 +16,16 @@ class ONTLRCaller():
     def __init__(self,bamFile,
                  chrom=None,start=None,end=None,
                  threads=8,minVarLen=50,
-                 minClipLen=100,distToJoinTrl=1000):
+                 minClipLen=100,distToJoinTrl=1000, workdir=''):
         if ((start==None or
              end==None) and 
             start!=end):
             print('ERROR (2)! If the start or the end for extracting reads is specified, another argument should also be defined.')
             print(start,end)
             exit(2)
+        self.bam_file_name = bamFile.split('/')[-1][:-4]
         self.bamFile=bamFile
+        self.workdir = workdir
         #self.outFile=outFile
         self.chrom=chrom
         self.start=start
@@ -41,7 +43,6 @@ class ONTLRCaller():
 
     def readBamFile(self):
         global outFiles,q
-        set_start_method('spawn')
         print('Reading BAM-file...')
         chromosomes=[self.chrom]       
         for chrom in chromosomes:
@@ -123,8 +124,9 @@ class ONTLRCaller():
             # Create pool of processes
             p=ThreadPool(self.threads)
             # Write to output
-            outFileName='.'.join([self.bamFile[:self.bamFile.rfind('.')],
-                                    'junction_stat',regionForName,'xls'])
+            outFileName='.'.join([self.bam_file_name,
+                                'junction_stat',regionForName,'xls'])
+            outFileName = self.workdir + outFileName
             outFiles=[]
             outFileName1=outFileName[:outFileName.rfind('.')]+'.fusions.csv'
             outFiles.append(open(outFileName1,'w'))
