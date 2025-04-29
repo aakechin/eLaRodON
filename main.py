@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     def check_path(path, arg_name):
         if not os.path.exists(path):
-            raise FileNotFoundError(f"ERROR: {arg_name} does not exist: {path}")
+            raise FileNotFoundError("ERROR: " + arg_name + " does not exist: "+ path)
         return path
 
     try:
@@ -118,7 +118,7 @@ if __name__ == '__main__':
         if not os.path.isdir(args.workDir):
             os.makedirs(args.workDir, exist_ok=True)
             os.makedirs(os.path.join(args.workDir, 'supplemetary'), exist_ok=True)
-            print(f"NOTE: Created working directory at {args.workDir}")
+            print("NOTE: Created working directory at " + args.workDir)
         
         if args.div_chroms and args.len_division <= 0:
             print('ERROR: Set the fragment size value for chromosome division!')
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         print(str(e))
         sys.exit(1)
     except Exception as e:
-        print(f"ERROR: {str(e)}")
+        print("ERROR: "+ str(e))
         sys.exit(1)
 
     bam_file_name = args.bamFile.split('/')[-1][:-4]

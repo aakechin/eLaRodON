@@ -23,7 +23,10 @@ class ONTLRCaller():
             print('ERROR (2)! If the start or the end for extracting reads is specified, another argument should also be defined.')
             print(start,end)
             exit(2)
-        self.bam_file_name = bamFile.split('/')[-1][:-4]
+        if bamFile[-2:] != 'gz':
+            self.bam_file_name = bamFile.split('/')[-1][:-4]
+        else:
+            self.bam_file_name = bamFile.split('/')[-1][:-7]
         self.bamFile=bamFile
         self.workdir = workdir
         #self.outFile=outFile
