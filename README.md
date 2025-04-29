@@ -216,17 +216,7 @@ python3 main.py -h
     *.junction_stat.INS_join100.csv - Insertion calls
 
     *_all_LGRS.vcf - Final annotated variants
-
-## Intermediate Files
-
-| Directory Structure              | Description                |
-|----------------------------------|----------------------------|
-| 📂 `results/`                    | Root output directory      |
-| └─ 📂 `alignment/`               | Alignment files            |
-|    ├─ 🧬 `*.fasta`              | Insertion and NewSeq sequences        |
-|    └─ 🔍 `*.sam`                | Alignment results          |
-| └─ 📂 `annotations/`            | Temporary annotation files |
-
+    
 ## Example
 Input Preparation
 ```bash
