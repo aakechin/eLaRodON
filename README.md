@@ -184,6 +184,7 @@ python3 main.py \
 |`-dist`,`-dist-to-join-trl`|	1000	| No | Min clipped length (bp)|
 |`-join`,`-maximal-distance-join`|	30	| No | Max distance for fusion joining (bp)|
 |`-th, --threads` |	4	| No | CPU threads|
+|`-cont, --continue` |	all	| No | Name of stage for start: bam, join, def|
 
 **Special file names**
 
