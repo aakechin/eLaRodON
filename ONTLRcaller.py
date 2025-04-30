@@ -154,7 +154,7 @@ class ONTLRCaller():
                     reads[i][2]=self.readToSecs[read[3][7]]
             results=[]
             m=Manager()
-            self.q=m.Queue()
+##            self.q=m.Queue()
             self.thsize=0
             results=[]
             for res in tqdm(p.imap_unordered(self.callLRs,reads),
@@ -271,8 +271,8 @@ class ONTLRCaller():
         # Stores CIGAR regular expression
         cigarPat=re.compile(r'(\d+)([MIDNSHPX=]+)')
         if mainReadPart[0]==None:
-            self.q.put([[],mainReadPart,
-                   deletions,insertions])
+##            self.q.put([[],mainReadPart,
+##                   deletions,insertions])
             #return(q)
             #self.thsize-=1
             return([],mainReadPart,
@@ -397,8 +397,8 @@ class ONTLRCaller():
                                     (supChrom!=mainReadPart[5] or
                                      (distToMain+1000<min(10000,mainToSupDist) and
                                       distToSup>distToMain))):
-                                    self.q.put([[],mainReadPart,
-                                               deletions,insertions])
+##                                    self.q.put([[],mainReadPart,
+##                                               deletions,insertions])
                                     #return(q)
                                     #self.thsize-=1
                                     return([],mainReadPart,
@@ -411,8 +411,8 @@ class ONTLRCaller():
                                 if (secReadPart[0]==supChrom and
                                     (supChrom!=mainReadPart[5] or
                                      distToSup+1000<min(10000,mainToSupDist))):
-                                    self.q.put([[],mainReadPart,
-                                               deletions,insertions])
+##                                    self.q.put([[],mainReadPart,
+##                                               deletions,insertions])
                                     #return(q)
                                     #self.thsize-=1
                                     return([],mainReadPart,
@@ -483,8 +483,8 @@ class ONTLRCaller():
                                     (supChrom!=mainReadPart[5] or
                                      (distToMain+1000<min(10000,mainToSupDist) and
                                       distToSup>distToMain))):
-                                    self.q.put([[],mainReadPart,
-                                               deletions,insertions])
+##                                    self.q.put([[],mainReadPart,
+##                                               deletions,insertions])
                                     #return(q)
                                     #self.thsize-=1
                                     return([],mainReadPart,
@@ -497,8 +497,8 @@ class ONTLRCaller():
                                 if (secReadPart[0]==supChrom and
                                     (supChrom!=mainReadPart[5] or
                                      distToSup+1000<min(10000,mainToSupDist))):
-                                    self.q.put([[],mainReadPart,
-                                               deletions,insertions])
+##                                    self.q.put([[],mainReadPart,
+##                                               deletions,insertions])
                                     #return(q)
                                     #self.thsize-=1
                                     return([],mainReadPart,
@@ -511,8 +511,8 @@ class ONTLRCaller():
                                              supChrom,int(supCoord),
                                              alen,int(supNM),supStrand,
                                              sidesForConn])
-        self.q.put([readSupPoses,mainReadPart,
-                   deletions,insertions])
+##        self.q.put([readSupPoses,mainReadPart,
+##                   deletions,insertions])
         #return(q)
         #self.thsize-=1
         return(readSupPoses,mainReadPart,
