@@ -25,10 +25,6 @@ if __name__ == '__main__':
                     dest='bamFile', type=str,
                     help='full path to BAM file with NGS reads',
                     required=True)
-    par.add_argument('--divide-chroms', '-div',
-                    dest='div_chroms', action='store_true', default=False,
-                    help='Divide chromosome to analyze. Default: all chromosomes',
-                    required=False)
     par.add_argument('--div-length', '-dvlen',
                     dest='len_division', type=int, default=0,
                     help='Length of regions for division chromosome to analyze',
@@ -124,11 +120,6 @@ if __name__ == '__main__':
             print("NOTE: Created working directory at " + args.workDir)
         if not os.path.isdir(os.path.join(args.workDir, 'supplementary')):
             os.makedirs(os.path.join(args.workDir, 'supplementary'), exist_ok=True)
-        
-        if args.div_chroms and args.len_division <= 0:
-            print('ERROR: Set the fragment size value for chromosome division!')
-            print('Use --div-length or -dvlen with positive integer value')
-            sys.exit(1)
             
     except FileNotFoundError as e:
         print(str(e))
@@ -170,7 +161,7 @@ if __name__ == '__main__':
     elif len(chrom_intersection_v2) == 25:
         chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v2}
     for chrom, chrom_len in sorted(chromosomes_dict.items()):
-        if args.div_chroms == False:
+        if args.len_division == 0:
             ontc=ONTLRCaller(args.bamFile,
                             chrom,
                             None,
@@ -184,7 +175,7 @@ if __name__ == '__main__':
         else:
             n = args.len_division
             for start in range(1, chrom_len, n):
-                end = min(start + n, chrom_len)
+                end = min(start + n-1, chrom_len)
                 ontc=ONTLRCaller(args.bamFile,
                                 chrom,
                                 start,
