@@ -10,10 +10,11 @@ from multiprocessing.pool import ThreadPool
 from threading import Thread
 import statistics as stat
 from tqdm import tqdm
+import logging
 
 class ONTLRCaller():
 
-    def __init__(self,bamFile,
+    def __init__(self,bamFile,log_path,
                  chrom=None,start=None,end=None,
                  threads=8,minVarLen=50,
                  minClipLen=100,distToJoinTrl=1000, workdir=''):
@@ -28,6 +29,9 @@ class ONTLRCaller():
         else:
             self.bam_file_name = bamFile.split('/')[-1][:-7]
         self.bamFile=bamFile
+        self.log_path = log_path
+        logging.basicConfig(level=logging.DEBUG, filename=self.log_path, filemode="a",
+                            format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
         self.workdir = workdir
         #self.outFile=outFile
         self.chrom=chrom
@@ -124,6 +128,7 @@ class ONTLRCaller():
             if len(reads)==0:
                 continue
             print('Analyzing reads for region '+regionForName+'...')
+            logging.info('Analyzing reads for region '+regionForName+'...')
             # Create pool of processes
             p=ThreadPool(self.threads)
             # Write to output
@@ -159,6 +164,7 @@ class ONTLRCaller():
                             total=len(reads)):
                 results.append(res)
             print('Writing fusions...')
+            logging.info('Writing fusions...')
             for result in tqdm(results,
                                 total=len(results)):
                 t2=Thread(target=self.writeOutput,

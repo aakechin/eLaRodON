@@ -12,9 +12,13 @@ import sys
 import pandas as pd
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
+import logging
 
 class InsertionProcessor:
-    def __init__(self, ins_file, lr_file, ref_genome, name, sam_file=None, threads=6, not_remove_trash=False):
+    def __init__(self, log_path, ins_file, lr_file, ref_genome, name, sam_file=None, threads=6, not_remove_trash=False):
+        self.log_path = log_path
+        logging.basicConfig(level=logging.DEBUG, filename=self.log_path, filemode="a",
+                            format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
         self.ins_file = ins_file
         self.lr_file = lr_file
         self.ref_genome = ref_genome
@@ -28,6 +32,7 @@ class InsertionProcessor:
 
     def read_insertions(self):
         print('Reading INS-file...')
+        logging.info('Reading INS-file...')
         df = pd.read_csv(self.ins_file, delimiter='\t')
         for index, row in df.iterrows():
             ins_id = index
@@ -37,6 +42,8 @@ class InsertionProcessor:
 
     def write_fasta(self, output_file):
         print('Writing FASTA-file...')
+        logging.info('Writing FASTA-file...')
+        logging.info('output_file: '+output_file)
         with open(output_file, 'w') as fasta_file:
             for ins_id, data in self.insertions.items():
                 # print('data', data)
@@ -48,19 +55,24 @@ class InsertionProcessor:
 
     def map_with_minimap2(self, fasta_file):
         print('Mapping...')
+        logging.info('Mapping...')
         if self.sam_file and os.path.exists(self.sam_file):
-            print("Using existing SAM file.")
+            print("Using existing SAM file...")
+            logging.info('"Using existing SAM file...')
             return
         output_sam = self.name + "_mapping_results.sam"
+        logging.info('output_sam: '+output_sam)
         subprocess.run([
             'minimap2', '-a', self.ref_genome, fasta_file],
             stdout=open(output_sam, 'w')
         )
+        logging.info(' '.join(['minimap2', '-a', self.ref_genome, fasta_file]))
         self.sam_file = output_sam
         # input('STOP mapping')
 
     def analyze_mapping_results(self):
         print('Searching tandem duplications...')
+        logging.info('Searching tandem duplications...')
         with open(self.sam_file, 'r') as sam_file:
             for line in sam_file:
                 if line.startswith('@'):
@@ -85,6 +97,7 @@ class InsertionProcessor:
 
     def merge_tandem_duplications(self):
         print('Merging tandem duplications...')
+        logging.info('Merging tandem duplications...')
         self.merged_insertions = defaultdict(list)
         for ins_id_1, map_pos_1, length_1 in self.tandem_duplications:
             for ins_id_2, map_pos_2, length_2 in self.tandem_duplications:
@@ -100,6 +113,7 @@ class InsertionProcessor:
             # print(f"File copied from {source_path} to {destination_path}")
         except Exception as e:
             print("Error occurred while copying file: " + e)
+            logging.error("Error occurred while copying file: " + e)
     
     def get_sequence_from_genome(self, chrom_name, temp_start, temp_end, diff, flag):
         # attempts = 0
@@ -154,6 +168,7 @@ class InsertionProcessor:
 
     def extract_sequences_before_after(self):
         print('Extracting sequences before and after insertions...')
+        logging.info('Extracting sequences before and after insertions...')
         rows = []
         for ins_id, map_pos, length in self.tandem_duplications:  
             self.insertions[ins_id]['ID'] = ins_id
@@ -188,6 +203,7 @@ class InsertionProcessor:
 
     def update_large_rearrangements_file(self):
         print('Updating LRs data...')
+        logging.info('Updating LRs data...')
         uniq = []
         with open(self.lr_file[:-4]+'_mapped_ins.csv', 'a') as lr_file:
             for ins_id, map_pos, length in self.tandem_duplications:
@@ -284,6 +300,7 @@ class InsertionProcessor:
 
     def update_original_csv(self, output_file):
         print('Updating INS data...')
+        logging.info('Updating INS data...')
         df = pd.read_csv(self.ins_file, delimiter='\t')
         filtered_df = df[~df.index.isin(self.tandem_duplications_ids)]
         filtered_df.to_csv(output_file, sep='\t', index=False)

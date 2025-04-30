@@ -10,12 +10,16 @@ import sys
 import statistics
 import traceback
 from tqdm import tqdm
+import logging
 
 class JoinLR():
 
     def __init__(self,ds,
                  args):
         self.th=args.threads
+        self.log_path = args.workDir+'/elarodon.log'
+        logging.basicConfig(level=logging.DEBUG, filename=self.log_path, filemode="a",
+                            format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
         p=Pool(self.th)
         self.maxDistToJoin=args.maxDistToJoin
         self.allFusions={}

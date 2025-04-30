@@ -16,6 +16,7 @@ from tqdm import tqdm
 from shutil import rmtree
 import toml
 import gzip
+import logging
 
 
 class AnalyzeLR():
@@ -23,6 +24,9 @@ class AnalyzeLR():
     def __init__(self, args):
         self.path_to_junc_file = args.juncFile
         self.path_to_ins_file = args.insFile
+        self.log_path = args.workDir+'/elarodon.log'
+        logging.basicConfig(level=logging.DEBUG, filename=self.log_path, filemode="a",
+                            format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
         # if os.path.isfile(self.path_to_junc_file[:-4] + '_mapped_ins.csv'):
         #     self.path_to_junc_file = self.path_to_junc_file[:-4] + '_mapped_ins.csv'
         # if os.path.isfile(self.path_to_ins_file[:-4] + '_mapped_ins.csv'):
@@ -62,6 +66,7 @@ class AnalyzeLR():
         iter = samfile.fetch()
         print()
         print('Reading BAM-file...')
+        logging.info('Reading BAM-file...')
         print()
         for x in iter:
             header = x.header
@@ -191,6 +196,7 @@ class AnalyzeLR():
                 self.new_header.append(line)
             except ValueError:
                 print('New header error! New_line: ', line)
+                logging.error('New header error! New_line: '+line)
                 break
         for name_contig, len_contig in self.general_dict_LR.items():
             len_contig = len_contig[0]
@@ -199,12 +205,14 @@ class AnalyzeLR():
                 self.new_header.append(line)
             except ValueError:
                 print('New header error! New_line: ', line)
+                logging.error('New header error! New_line: '+line)
                 break
         for line in header_list_2:
             try:
                 self.new_header.append(line)
             except ValueError:
                 print('New header error! New_line: ', line)
+                logging.error('New header error! New_line: '+line)
                 break
         self.new_header.append('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t'+str(self.name_sample))
         
@@ -247,6 +255,7 @@ class AnalyzeLR():
                         # print('Error! Unable to extract the sequence from the reference genome!')
                         # print(chrom_name, temp_start, temp_end, diff, flag)
                         # sys.exit()
+                        logging.error('Unable to extract the sequence from the reference genome! '+str(chrom_name)+' '+str(temp_start)+' '+str(temp_end)+' '+str(diff)+' '+str(flag))
                         return ''
         return (seq.upper())
     
@@ -434,6 +443,7 @@ class AnalyzeLR():
                     homeoseq_max = homeoseq
         else:
             print('Error! There are several sequences in each list!')
+            logging.error('Error! There are several sequences in each list!')
             sys.exit()
         return (microseq_max, homeoseq_max)
 
@@ -519,6 +529,7 @@ class AnalyzeLR():
             print('ERROR of getting read muts:', row)
             print(row['Read_Muts'])
             print(row['Read_Muts'].split(','))
+            logging.error('ERROR of getting read muts:'+str(row))
             sys.exit()
         info_LR['Read_Muts_median'] = int(round(median(read_muts),0))
         if len(read_muts) == 1:
@@ -551,6 +562,7 @@ class AnalyzeLR():
             info_LR['Cigar_Num'] = int(row['Cigar_Num'])
         except ValueError:
             print('ERROR!', row)
+            logging.error('ERROR!', row)
             sys.exit()
         info_LR['Inversion_Num'] = int(row['Inversion_Num'])
 
@@ -602,6 +614,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for T!')
                 print('row.Pos1:', row['Pos1'])
+                logging('Error in the record of coordinates for T!')
+                logging(str(row))
                 sys.exit()
             # from where this piece was extracted
             try:
@@ -610,6 +624,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for T!')
                 print('row.Pos2:', row['Pos2'])
+                logging('Error in the record of coordinates for T!')
+                logging(str(row))
                 sys.exit()
             # junction sides
             info_LR['Junc_1'] = 'R'
@@ -648,6 +664,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for I!')
                 print('row.Pos1:', row['Pos1'])
+                logging('Error in the record of coordinates for I!')
+                logging(str(row))
                 sys.exit()
             # pos2 (1 and 2) = gap between <-- (2) and --> (3)
             try:
@@ -656,6 +674,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for I!')
                 print('row.Pos2:', row['Pos2'])
+                logging('Error in the record of coordinates for I!')
+                logging(str(row))
                 sys.exit()
             # junction sides
             info_LR['Junc_1'] = 'L'
@@ -685,6 +705,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for D!')
                 print('row.Pos1:', row['Pos1'])
+                logging('Error in the record of coordinates for D!')
+                logging(str(row))
                 sys.exit()
             # pos2 (1 and 2) = junction between --> (2) and --> (3)
             try:
@@ -693,6 +715,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for D!')
                 print('row.Pos2:', row['Pos2'])
+                logging('Error in the record of coordinates for D!')
+                logging(str(row))
                 sys.exit()
             if len(info_LR['Junc_1'])>1:
                 repeat_num=int(info_LR['Junc_1'].replace('D',''))+1
@@ -736,6 +760,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for V!')
                 print('row.Pos1:', row['Pos1'])
+                logging('Error in the record of coordinates for V!')
+                logging(str(row))
                 sys.exit()
             # pos2 (1 and 2) = junction between <-- (2) and --> (3)
             try:
@@ -744,6 +770,8 @@ class AnalyzeLR():
             except IndexError:
                 print('Error in the record of coordinates for V!')
                 print('row.Pos2:', row['Pos2'])
+                logging('Error in the record of coordinates for V!')
+                logging(str(row))
                 sys.exit()
             # junction sides
             info_LR['Junc_1'] = 'L'
@@ -779,6 +807,8 @@ class AnalyzeLR():
                         if info_LR['LR_len'] < 0:
                             print('Error! The rearrangement length is less than zero!')
                             print('Information dict:', info_LR)
+                            logging.error('Error! The rearrangement length is less than zero!')
+                            logging.error('Information dict: '+str(info_LR))
                             sys.exit()
                     else:
                         # may be TD or TRL
@@ -793,6 +823,8 @@ class AnalyzeLR():
                         if info_LR['LR_len'] < 0:
                             print('Error! The rearrangement length is less than zero!')
                             print('Information dict:', info_LR)
+                            logging.error('Error! The rearrangement length is less than zero!')
+                            logging.error('Information dict: '+str(info_LR))
                             sys.exit()
                     determined_type_num += 1
                 elif info_LR['Junc_1'] == 'R' and info_LR['Junc_2'] == 'L': # R+L+ R-L-
@@ -807,6 +839,8 @@ class AnalyzeLR():
                     if info_LR['LR_len'] < 0:
                         print('Error! The rearrangement length is less than zero!')
                         print('Information dict:', info_LR)
+                        logging.error('Error! The rearrangement length is less than zero!')
+                        logging.error('Information dict: '+str(info_LR))
                         sys.exit()
                     determined_type_num += 1
             else: # +- or -+
@@ -825,6 +859,8 @@ class AnalyzeLR():
                         if info_LR['LR_len'] < 0:
                             print('Error! The rearrangement length is less than zero!')
                             print('Information dict:', info_LR)
+                            logging.error('Error! The rearrangement length is less than zero!')
+                            logging.error('Information dict: '+str(info_LR))
                             sys.exit()
                         determined_type_num += 1
                     else: # also R+R- R-R+ L-L+ L+L- but with overlap
@@ -839,6 +875,8 @@ class AnalyzeLR():
                         if info_LR['LR_len'] < 0:
                             print('Error! The rearrangement length is less than zero!')
                             print('Information dict:', info_LR)
+                            logging.error('Error! The rearrangement length is less than zero!')
+                            logging.error('Information dict: '+str(info_LR))
                             sys.exit()
                         determined_type_num += 1
                         
@@ -875,6 +913,8 @@ class AnalyzeLR():
         if determined_type_num > 1:
             print('Error! There are several types of the rearrangement!')
             print('Information dict:', info_LR)
+            logging.error('Error! There are several types of the rearrangement!')
+            logging.error('Information dict: '+str(info_LR))
             sys.exit()
 
         # check microhomology for all types of LGRs
@@ -1012,6 +1052,8 @@ class AnalyzeLR():
         if determined_type_num == 0:
             print('Error! Failed to determine the type of the rearrangement!')
             print('Information dict:', info_LR)
+            logging.error('Error! Failed to determine the type of the rearrangement!')
+            logging.error('Information dict: '+str(info_LR))
             sys.exit()
 
         return info_LR
@@ -1019,6 +1061,7 @@ class AnalyzeLR():
     # read the main csv-file with coordinates of rearrangements (all except insertions)
     def read_junc_file(self):
         print('Reading CSV-files with information about genomic rearrangements...')
+        logging.info('Reading CSV-files with information about genomic rearrangements...')
         junc_file = pd.read_csv(self.path_to_junc_file, delimiter='\t')
         junc_file['Line_Num'] = range(1, len(junc_file) + 1)
         
@@ -1160,6 +1203,7 @@ class AnalyzeLR():
     def read_file_INS(self):
         print()
         print('CSV-file reading with information about insertions...')
+        logging.info('CSV-file reading with information about insertions...')
         ins_file = pd.read_csv(self.path_to_ins_file, delimiter='\t')
         ins_file['Line_Num'] = range(1, len(ins_file) + 1)
         # delete lines with the number of reads less than 1
@@ -1239,6 +1283,7 @@ class AnalyzeLR():
                 self.temp_header.append(line)
             except ValueError:
                 print('Error in the temporary header! New_line: ', line)
+                logging.error('Error in the temporary header! New_line: '+line)
                 sys.exit()
         for name_contig, len_contig in self.general_dict_LR.items():
             len_contig = len_contig[0]
@@ -1247,12 +1292,14 @@ class AnalyzeLR():
                 self.temp_header.append(line)
             except ValueError:
                 print('Error in the temporary header! New_line: ', line)
+                logging.error('Error in the temporary header! New_line: '+line)
                 sys.exit()
         for line in header_list_2:
             try:
                 self.temp_header.append(line)
             except ValueError:
                 print('Error in the temporary header! New_line: ', line)
+                logging.error('Error in the temporary header! New_line: '+line)
                 sys,exit()
         self.temp_header.append('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t'+str(self.name_sample))
 
@@ -2078,6 +2125,7 @@ class AnalyzeLR():
     def define_boundries(self):
         print()
         print('Trying to find secondary boundries and connected insertions for LGRs...')  
+        logging.info('Trying to find secondary boundries and connected insertions for LGRs...') 
         # for saving "second" reads for LGRs
         self.secondary_LGRs_dict = {}
         self.secondary_TRLs_dict = {}
@@ -2212,6 +2260,7 @@ class AnalyzeLR():
         # inversion_before_trans = [] # list for saving possible inversion or inverted tandem duplications starts
         print()
         print('Creating data for VCF-file...')
+        logging.info('Creating data for VCF-file...')
         with open(self.path_vcf_out, 'a') as vcf_file:
             # done_work = 0
             # all_work = sum([len(x[1][1]) for x in self.general_dict_LR.items()])
@@ -2449,6 +2498,8 @@ class AnalyzeLR():
                             print()
                             print("Warning! dict_LR_info['Pos'] > dict_LR_info['Pos2']")
                             print('dict_LR_info: ', dict_LR_info)
+                            logging.warning("Warning! dict_LR_info['Pos'] > dict_LR_info['Pos2']")
+                            logging.warning('dict_LR_info: '+dict_LR_info)
                             print()
                             # input()                              
 
@@ -2719,6 +2770,8 @@ class AnalyzeLR():
                             print()
                             print('Unknown rearrangement:', dict_LR_info['Type'])
                             print('dict_LR_info: ', dict_LR_info)
+                            logging.error('Unknown rearrangement:'+str(dict_LR_info['Type']))
+                            logging.error('dict_LR_info: '+str(dict_LR_info))
                             sys.exit()
                         
                         vcf_file.write(new)
@@ -2787,6 +2840,7 @@ class AnalyzeLR():
         ff.close()
         self.read_file_INS()
         print('Sorting data for VCF-files...')
+        logging.info('Sorting data for VCF-files...')
         # sort all rearrangement by chr + coordinate
         for key, val in self.general_dict_LR.items():
             self.general_dict_LR[key][1] = list(sorted(val[1], key=lambda x: x['Pos']))
@@ -2802,6 +2856,7 @@ class AnalyzeLR():
             os.mkdir(self.temp_dir)
         print()
         print('Creating temporary VCF-files for annotating genomic elements...')
+        logging.info('Creating temporary VCF-files for annotating genomic elements...')
         self.build_temp_header()
         with open(self.temp_vcf_file_pos1, 'w', encoding='utf-8') as temp_1_vcf:
             for line in self.temp_header:
@@ -2812,6 +2867,7 @@ class AnalyzeLR():
         self.build_temp_vcf_data()
         # adjust bed file
         print('Preparing files for vcfanno...')
+        logging.info('Preparing files for vcfanno...')
         self.path_bed_adjusted = self.path_bed[:-4] + '_adjusted.bed'
         self.adjust_bed_coordinates(self.path_bed, self.path_bed_adjusted)
         self.create_lua_file(self.path_lua)
@@ -2821,16 +2877,23 @@ class AnalyzeLR():
         self.general_dict_LR_pos2 = {}
         # annotate repeats near the ends of rearrangements
         print('Using vcfanno...')
+        logging.info('Using vcfanno...')
         sp.check_output(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos1+" > "+self.temp_vcf_ann_1, shell=True, stderr=sp.STDOUT).decode('utf-8')
         sp.check_output(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos2+" > "+self.temp_vcf_ann_2, shell=True, stderr=sp.STDOUT).decode('utf-8')
+        logging.info(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos1+" > "+self.temp_vcf_ann_1)
+        logging.info(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos2+" > "+self.temp_vcf_ann_2)
         # read annotation results
         print('Saving the results of rearrangement analysis for overlapping genomic elements...')
+        logging.info('Saving the results of rearrangement analysis for overlapping genomic elements...')
         self.read_results_vcfanno()
         if self.not_remove_trash == False:
             if os.path.isdir(self.temp_dir):
                 rmtree(self.temp_dir)
+                logging.info('rmtree(self.temp_dir) '+self.temp_dir)
             os.remove(self.path_toml)
+            logging.info('os.remove(self.path_toml) '+self.path_toml)
             os.remove(self.path_lua)
+            logging.info('os.remove(self.path_lua) '+self.path_lua)
         # define secondary boundries and connectes INS
         for key, val in self.types_secondary_boundry.items():
             types_secondary_boundry_list = list(zip(val[0], val[1], val[2], val[3], val[4], val[5], val[6]))
@@ -2855,6 +2918,7 @@ class AnalyzeLR():
         self.build_new_vcf_data()
         print()
         text_final = 'VCF-file was created successfully!'
+        logging.info('VCF-file was created successfully!')
         print('-'*len(text_final))
         print(text_final)
         print('-'*len(text_final))

@@ -10,6 +10,7 @@ import os
 import sys
 import gc
 from multiprocessing import set_start_method
+import logging
 
 
 if __name__ == '__main__':
@@ -107,8 +108,15 @@ if __name__ == '__main__':
     
     args=par.parse_args()
 
+    logging_path = args.workDir+'/elarodon.log'
+    logging.basicConfig(level=logging.DEBUG, filename=logging_path, filemode="w",
+                            format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
+    
+    logging.info("--- The eLaRodON has been started! ---")
+
     def check_path(path, arg_name):
         if not os.path.exists(path):
+            logging.error("ERROR: " + arg_name + " does not exist: "+ path)
             raise FileNotFoundError("ERROR: " + arg_name + " does not exist: "+ path)
         return path
 
@@ -123,15 +131,18 @@ if __name__ == '__main__':
 
         if not os.path.isdir(args.workDir):
             os.makedirs(args.workDir, exist_ok=True)
+            logging.info("NOTE: Created working directory at " + args.workDir)
             print("NOTE: Created working directory at " + args.workDir)
         if not os.path.isdir(os.path.join(args.workDir, 'supplementary')):
             os.makedirs(os.path.join(args.workDir, 'supplementary'), exist_ok=True)
             
     except FileNotFoundError as e:
-        print(str(e))
+        print("ERROR: " + str(e))
+        logging.error("ERROR: " + str(e))
         sys.exit(1)
     except Exception as e:
-        print("ERROR: "+ str(e))
+        print("ERROR: " + str(e))
+        logging.error('ERROR: ' + str(e))
         sys.exit(1)
 
     bam_file_name_full = args.bamFile.split('/')[-1]
@@ -139,6 +150,9 @@ if __name__ == '__main__':
     if bam_file_name[-3:] == 'bam':
         bam_file_name = bam_file_name[:-4]
     bam_results_path = args.workDir +'/supplementary/' + bam_file_name 
+
+    logging.info('bam_file_name: ' + bam_file_name)
+    logging.info('bam_results_path: ' + bam_results_path)
 
     if not hasattr(args, 'inFiles') or args.inFiles is None:
         args.inFiles = bam_results_path+'.junction_stat.*.*ions.csv'
@@ -154,13 +168,25 @@ if __name__ == '__main__':
         args.insFile = bam_results_path +'.junction_stat.INS_join100_mapped_ins.csv'
     if not hasattr(args, 'outVCF') or args.outVCF is None:
         args.outVCF = args.workDir + '/' + bam_file_name + '_all_LGRS.vcf'
+    
+    logging.info('args.inFiles: ' + args.inFiles)
+    logging.info('args.outLrsFile: ' + args.outLrsFile)
+    logging.info('args.outInsFile: ' + args.outInsFile)
+    logging.info('args.nameINS: ' + args.nameINS)
+    logging.info('args.juncFile: ' + args.juncFile)
+    logging.info('args.insFile: ' + args.insFile)
+    logging.info('args.outVCF: ' + args.outVCF)
+
+    logging.basicConfig(level=logging.DEBUG, filename=logging_path, filemode="a",
+                            format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
 
     if args.cont == 'all' or args.cont == 'bam':
         # ONTLRcaller
         print()
         print('=== ONTLRcaller ===')
+        logging.info('--- ONTLRcaller started ---')
         set_start_method('spawn')
-        bamreader = BamReader(args.bamFile, args.threads)
+        bamreader = BamReader(args.bamFile, args.threads, logging_path)
         chromosomes_dict = bamreader.read_bam()
         # we analyze only main chomosomes for human genome
         chom_list = set(chromosomes_dict.keys())
@@ -173,6 +199,7 @@ if __name__ == '__main__':
         for chrom, chrom_len in sorted(chromosomes_dict.items()):
             if args.len_division == 0:
                 ontc=ONTLRCaller(args.bamFile,
+                                logging_path,
                                 chrom,
                                 None,
                                 None,
@@ -187,6 +214,7 @@ if __name__ == '__main__':
                 for start in range(1, chrom_len, n):
                     end = min(start + n-1, chrom_len)
                     ontc=ONTLRCaller(args.bamFile,
+                                    logging_path,
                                     chrom,
                                     start,
                                     end,
@@ -196,6 +224,7 @@ if __name__ == '__main__':
                                     args.distToJoinTrl,
                                     args.workDir +'/supplementary/')
                     ontc.readBamFile()
+        logging.info('--- ONTLRcaller finished ---')
         del(ontc)
         gc.collect()
     
@@ -203,27 +232,40 @@ if __name__ == '__main__':
         #joinONTLRs
         print()
         print('=== joinONTLRs ===')
+        logging.info('--- joinONTLRs started ---')
         ds = glob.glob(args.inFiles)
         if len(ds)==0:
             print('ERROR (1)! No files were chosen:')
+            logging.error('ERROR (1)! No files were chosen:')
             print(args.inFiles)
+            logging.error('args.inFiles: ', args.inFiles)
             exit(1)
         print('The number of files chosen:', len(ds))
+        logging.info('The number of files chosen: '+str(len(ds)))
         print('Reading input files with', args.threads, 'threads...')
+        logging.info('Reading input files with '+str(args.threads)+' threads...')
         jl = JoinLR(ds, args)
         print('The total number of fusions:', sum(len(item) for item in jl.allFusions.values()))
+        logging.info('The total number of fusions: '+str(sum(len(item) for item in jl.allFusions.values())))
         print('The total number of insertions:', sum(len(item) for item in jl.allInsertions.values()))
+        logging.info('The total number of insertions: '+str(sum(len(item) for item in jl.allInsertions.values())))
         jl.joinAllSimilarLRs()
+        logging.info('jl.joinAllSimilarLRs()')
         jl.writeFusionToOutput(args.outLrsFile)
+        logging.info('jl.writeFusionToOutput(args.outLrsFile)')
         jl.writeInsertionsToOutput(args.outInsFile)
+        logging.info('jl.writeInsertionsToOutput(args.outInsFile)')
         del(jl)
         gc.collect()
+        logging.info('--- joinONTLRs finished ---')
         print()
 
         # alignment INS
         print()
         print('=== alignment_INS ===')
-        alignINS_processor = InsertionProcessor(args.outInsFile, 
+        logging.info('--- alignment_INS started ---')
+        alignINS_processor = InsertionProcessor(logging_path,
+                                                args.outInsFile, 
                                                 args.outLrsFile, 
                                                 args.refGen, 
                                                 args.nameINS, 
@@ -244,11 +286,17 @@ if __name__ == '__main__':
         del(alignINS_processor)
         gc.collect()
         print('Analysis of INS was done!')
+        logging.info('--- alignment_INS finished ---')
 
     if args.cont == 'all' or args.cont == 'bam' or args.cont == 'join' or args.cont == 'def':
         # define types of LGRs
         print()
         print('=== define_type_create_vcf_LRs ===')
+        logging.info('--- define_type_create_vcf_LRs started ---')
         analyze_LR = AnalyzeLR(args=args)
         analyze_LR.main_func()
+        logging.info('--- define_type_create_vcf_LRs finished ---')
+    
+    logging.info("--- The eLaRodON has been finished! ---")
+    
 
