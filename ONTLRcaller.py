@@ -45,7 +45,7 @@ class ONTLRCaller():
         #self.q=Queue()
 
     def readBamFile(self):
-        global outFiles,q
+        global outFiles
         print('Reading BAM-file...')
         chromosomes=[self.chrom]       
         for chrom in chromosomes:
@@ -133,7 +133,6 @@ class ONTLRCaller():
             outFiles=[]
             outFileName1=outFileName[:outFileName.rfind('.')]+'.fusions.csv'
             outFiles.append(open(outFileName1,'w'))
-            #with open(self.outFiles[-1],'w') as rFile:
             outFiles[-1].write('\t'.join(['Chrom1','Pos1','Strand1','Junction_Side1',
                                             'Chrom2','Pos2','Strand2','Junction_Side2',
                                             'MQ','Ref_Cov','Read_Len1','Read_Len2','Read_Muts',
@@ -154,7 +153,6 @@ class ONTLRCaller():
                     reads[i][2]=self.readToSecs[read[3][7]]
             results=[]
             m=Manager()
-##            self.q=m.Queue()
             self.thsize=0
             results=[]
             for res in tqdm(p.imap_unordered(self.callLRs,reads),
@@ -247,7 +245,6 @@ class ONTLRCaller():
 
     # The following function calls large rearrangements from read object of pysam
     def callLRs(self,readInfo):
-        #global q
         self.thsize+=1
         minVarLen=readInfo[0]
         minClipLen=readInfo[1]
@@ -271,10 +268,6 @@ class ONTLRCaller():
         # Stores CIGAR regular expression
         cigarPat=re.compile(r'(\d+)([MIDNSHPX=]+)')
         if mainReadPart[0]==None:
-##            self.q.put([[],mainReadPart,
-##                   deletions,insertions])
-            #return(q)
-            #self.thsize-=1
             return([],mainReadPart,
                    deletions,insertions)
         # Extract DELs and INSs from CIGAR
@@ -397,10 +390,6 @@ class ONTLRCaller():
                                     (supChrom!=mainReadPart[5] or
                                      (distToMain+1000<min(10000,mainToSupDist) and
                                       distToSup>distToMain))):
-##                                    self.q.put([[],mainReadPart,
-##                                               deletions,insertions])
-                                    #return(q)
-                                    #self.thsize-=1
                                     return([],mainReadPart,
                                            deletions,insertions)
                                     # If chromosome is the same like in the primary alignment and it's closer to it than current sup_align
@@ -411,10 +400,6 @@ class ONTLRCaller():
                                 if (secReadPart[0]==supChrom and
                                     (supChrom!=mainReadPart[5] or
                                      distToSup+1000<min(10000,mainToSupDist))):
-##                                    self.q.put([[],mainReadPart,
-##                                               deletions,insertions])
-                                    #return(q)
-                                    #self.thsize-=1
                                     return([],mainReadPart,
                                            deletions,insertions)
                                     # If chromosome is the same like in the supplementary alignment and it's closer to it than current primary_al
@@ -483,10 +468,6 @@ class ONTLRCaller():
                                     (supChrom!=mainReadPart[5] or
                                      (distToMain+1000<min(10000,mainToSupDist) and
                                       distToSup>distToMain))):
-##                                    self.q.put([[],mainReadPart,
-##                                               deletions,insertions])
-                                    #return(q)
-                                    #self.thsize-=1
                                     return([],mainReadPart,
                                            deletions,insertions)
                                     # If chromosome is the same like in the primary alignment and it's closer to it than current sup_align
@@ -497,10 +478,6 @@ class ONTLRCaller():
                                 if (secReadPart[0]==supChrom and
                                     (supChrom!=mainReadPart[5] or
                                      distToSup+1000<min(10000,mainToSupDist))):
-##                                    self.q.put([[],mainReadPart,
-##                                               deletions,insertions])
-                                    #return(q)
-                                    #self.thsize-=1
                                     return([],mainReadPart,
                                            deletions,insertions)
                                     # If chromosome is the same like in the primary alignment and it's closer to it than current sup_align
@@ -511,10 +488,6 @@ class ONTLRCaller():
                                              supChrom,int(supCoord),
                                              alen,int(supNM),supStrand,
                                              sidesForConn])
-##        self.q.put([readSupPoses,mainReadPart,
-##                   deletions,insertions])
-        #return(q)
-        #self.thsize-=1
         return(readSupPoses,mainReadPart,
                deletions,insertions)
 
@@ -542,23 +515,11 @@ class ONTLRCaller():
         global outFiles
         self.thsize+=1
         fusions=[]
-##        print(self.readSupPoses)
-##        print(out)
-##        if len(self.mainReadPart)==0:
-##            return()
-##        readParts=self.readSupPoses
-##        cigarTuples,readLen,readPos,readReverse,readSeq,readChrom,readAlignedLen,readName,mapQual,mapNM,readSups=self.mainReadPart
-##        deletions=self.deletions
-##        insertions=self.insertions
         try:
             readParts,(cigarTuples,readLen,readPos,readReverse,readSeq,readChrom,readAlignedLen,readName,mapQual,mapNM,readSups),deletions,insertions=out#out.get()
         except ValueError:
             print('ERROR',out)
             exit()
-        #with open(self.outFiles[0],'w+') as rFile1:
-        #    with open(self.outFiles[1],'w+') as rFile2:
-        #        with open(self.outFiles[2],'w+') as rFile3:
-        #            with open(self.outFiles[3],'w+') as rFile4:
         # Process saved read parts and their sequences
         # First, sort read parts
         readParts.sort()
@@ -1087,18 +1048,6 @@ class ONTLRCaller():
                         insertion[6]])
             outFiles[1].write('\t'.join(out)+'\n')
         self.thsize-=1
-
-##class ONTLRCallerOUT():
-##
-##    def __init__(self,readSupPoses,
-##                 mainReadPart,deletions,
-##                 insertions):
-##        self.readSupPoses=readSupPoses
-##        self.mainReadPart=mainReadPart
-##        self.deletions=deletions
-##        self.insertions=insertions
-
-    
 
 if __name__=='__main__':        
 
