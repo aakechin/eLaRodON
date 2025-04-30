@@ -29,20 +29,13 @@ class JoinLR():
                     if chrom not in self.allFusions.keys():
                         self.allFusions[chrom]=fusionToInfo
                     else:
-##                        for pos,fusionToInfo in posToFusions.items():
-##                            if pos not in self.allFusions[chrom].keys():
-##                                self.allFusions[chrom]=fusionToInfo
-##                            else:
                         for fusion,info in fusionToInfo.items():
                             if fusion not in self.allFusions[chrom].keys():
                                 self.allFusions[chrom][fusion]=info
                             else:
-##                                for readName in info[0]:
-##                                    if readName not in self.allFusions[chrom][fusion][0]:
                                 for i in [0,2,4,5,6,7,8,9,10]:
                                     self.allFusions[chrom][fusion][i].extend(info[i])
                                     # Error percents
-##                                            self.allFusions[chrom][fusion][6].extend(info[6])
                                 for jointType,jointSeqToNum in enumerate(info[1]):
                                     for jointSeq,num in jointSeqToNum.items():
                                         if jointSeq not in self.allFusions[chrom][fusion][1][jointType].keys():
@@ -134,11 +127,6 @@ class JoinLR():
                 # SeqBefore,SeqAfter
                 seqBefore=row[18]
                 seqAfter=row[19]
-##                fusionOrdered=[fusionOrdered[0],
-##                               int(fusionOrdered[1]),
-##                               *fusionOrdered[2:5],
-##                               int(fusionOrdered[5]),
-##                               *fusionOrdered[6:]]
                 fusionOrdered=tuple(fusionOrdered)
                 chrom=fusionOrdered[0]
                 if type(fusionOrdered[1])==int:
@@ -148,8 +136,6 @@ class JoinLR():
                 # Now save it by the 1st chromosome
                 if chrom not in allFusions.keys():
                     allFusions[chrom]={}
-##                if pos not in allFusions[chrom].keys():
-##                    allFusions[chrom][pos]={}
                 if fusionOrdered not in allFusions[chrom].keys():
                     # [reads_names,[jointType1,jointType2,jointType3],
                     # [MQs],refCov,[readLens1],[readLens2],[errPercs]
@@ -187,6 +173,7 @@ class JoinLR():
                         if jointSeq not in allFusions[chrom][fusionOrdered][1][jointNum].keys():
                             allFusions[chrom][fusionOrdered][1][jointNum][jointSeq]=0
                         allFusions[chrom][fusionOrdered][1][jointNum][jointSeq]+=1
+            del(data)
             return(allFusions,allInsertions)
         if 'insertions.csv' in d:
             data=pandas.read_csv(d,sep='\t')
@@ -295,6 +282,8 @@ class JoinLR():
                                                     total_cov_middle,
                                                     mqs,
                                                     read_muts])
+        del(miniGroups)
+        del(data)
         return(allFusions,allInsertions)
 
     def joinAllSimilarLRs(self):
@@ -311,16 +300,8 @@ class JoinLR():
     def joinChromSimilarLRs(self,chrom):
         chromFusionsJoined1={}
         # Sort by 1st coordinate
-##        fusionsSorted=[]
-##        for pos,fusions in sorted(self.allFusions[chrom].items()):
-##            for fusion in sorted(fusions,
-##                                 key=lambda item:[item[0], # fusionOrdered
-##                                                  int(str(item[1]).split(',')[0]),
-##                                                  item[4],
-##                                                  int(str(item[5]).split(',')[0])]):
-##                fusionsSorted.append(fusion)
         fusionsSorted=sorted(self.allFusions[chrom],
-                             key=lambda item:[item[0], # fusionOrdered
+                             key=lambda item:[item[0],
                                               int(str(item[1]).split(',')[0]), # pos
                                               item[4],
                                               int(str(item[5]).split(',')[0])])
@@ -397,9 +378,9 @@ class JoinLR():
                                'Chrom2','Pos2','Strand2','Junction_Side2',
                                'Read_Number','Ref_Coverage','MQ_median',
                                'Read_Len1','Read_Len2','Read_Muts',
-                               'Inter_Joints', #### edited
-                               'Scarless_Joints', #### edited
-                               'NewSeq_Joints', #### edited
+                               'Inter_Joints', 
+                               'Scarless_Joints',
+                               'NewSeq_Joints',
                                'Cigar_Num','Inversion_Num',
                                'Start_End_Locations','Number_of_parts',
                                'Seqs_before_BND','Seqs_after_BND',
@@ -459,8 +440,6 @@ class JoinLR():
                     print(numbers)
                     exit(2)
                 rFile.write(out+'\n')
-##                fusionNum+=1
-##                showPercWork(fusionNum,sumLen)
         rFile.close()
         print()
 

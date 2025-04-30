@@ -8,6 +8,7 @@ from multiprocessing import cpu_count
 import glob
 import os
 import sys
+import gc
 from multiprocessing import set_start_method
 
 
@@ -194,6 +195,8 @@ if __name__ == '__main__':
                                 args.distToJoinTrl,
                                 args.workDir +'/supplementary/')
                 ontc.readBamFile()
+    del(ontc)
+    gc.collect()
 
     #joinONTLRs
     print()
@@ -211,6 +214,8 @@ if __name__ == '__main__':
     jl.joinAllSimilarLRs()
     jl.writeFusionToOutput(args.outLrsFile)
     jl.writeInsertionsToOutput(args.outInsFile)
+    del(jl)
+    gc.collect()
     print()
 
     # alignment INS
@@ -234,6 +239,8 @@ if __name__ == '__main__':
     alignINS_processor.update_large_rearrangements_file()
     updated_csv = args.outInsFile[:-4]+'_mapped_ins.csv'
     alignINS_processor.update_original_csv(updated_csv)
+    del(alignINS_processor)
+    gc.collect()
     print('Analysis of INS was done!')
 
     # define types of LGRs
