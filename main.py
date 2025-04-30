@@ -16,6 +16,12 @@ if __name__ == '__main__':
 
     par = argparse.ArgumentParser(description='This script calls large rearrangements in ONT data')
 
+    # if you need to continue from certain stage
+    par.add_argument('--continue', '-cont',
+                    dest='cont', type=str,
+                    help='start the programme from a certain stage: bam - to start from ONTLRcaller, join - joinONTLRs, def - define_type_create_vcf. Default: all (for all stages)',
+                    default='all')
+
     # ONTLRcaller
     par.add_argument('--workdir', '-dir',
                     dest='workDir', type=str,
@@ -146,97 +152,100 @@ if __name__ == '__main__':
     if not hasattr(args, 'outVCF') or args.outVCF is None:
         args.outVCF = args.workDir + '/' + bam_file_name + '_all_LGRS.vcf'
 
-    # ONTLRcaller
-    print()
-    print('=== ONTLRcaller ===')
-    set_start_method('spawn')
-    bamreader = BamReader(args.bamFile, args.threads)
-    chromosomes_dict = bamreader.read_bam()
-    # we analyze only main chomosomes for human genome
-    chom_list = set(chromosomes_dict.keys())
-    chrom_intersection_v1 = chom_list & {'chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX', 'chrY', 'chrM'}
-    chrom_intersection_v2 = chom_list & {'1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X', 'Y', 'M'}
-    if len(chrom_intersection_v1) == 25:
-        chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v1}
-    elif len(chrom_intersection_v2) == 25:
-        chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v2}
-    for chrom, chrom_len in sorted(chromosomes_dict.items()):
-        if args.len_division == 0:
-            ontc=ONTLRCaller(args.bamFile,
-                            chrom,
-                            None,
-                            None,
-                            args.threads,
-                            args.minVarLen,
-                            args.minClipLen,
-                            args.distToJoinTrl,
-                            args.workDir +'/supplementary/')
-            ontc.readBamFile()
-        else:
-            n = args.len_division
-            for start in range(1, chrom_len, n):
-                end = min(start + n-1, chrom_len)
+    if args.cont == 'all' or args.cont == 'bam':
+        # ONTLRcaller
+        print()
+        print('=== ONTLRcaller ===')
+        set_start_method('spawn')
+        bamreader = BamReader(args.bamFile, args.threads)
+        chromosomes_dict = bamreader.read_bam()
+        # we analyze only main chomosomes for human genome
+        chom_list = set(chromosomes_dict.keys())
+        chrom_intersection_v1 = chom_list & {'chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX', 'chrY', 'chrM'}
+        chrom_intersection_v2 = chom_list & {'1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X', 'Y', 'M'}
+        if len(chrom_intersection_v1) == 25:
+            chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v1}
+        elif len(chrom_intersection_v2) == 25:
+            chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v2}
+        for chrom, chrom_len in sorted(chromosomes_dict.items()):
+            if args.len_division == 0:
                 ontc=ONTLRCaller(args.bamFile,
                                 chrom,
-                                start,
-                                end,
+                                None,
+                                None,
                                 args.threads,
                                 args.minVarLen,
                                 args.minClipLen,
                                 args.distToJoinTrl,
                                 args.workDir +'/supplementary/')
                 ontc.readBamFile()
-    del(ontc)
-    gc.collect()
+            else:
+                n = args.len_division
+                for start in range(1, chrom_len, n):
+                    end = min(start + n-1, chrom_len)
+                    ontc=ONTLRCaller(args.bamFile,
+                                    chrom,
+                                    start,
+                                    end,
+                                    args.threads,
+                                    args.minVarLen,
+                                    args.minClipLen,
+                                    args.distToJoinTrl,
+                                    args.workDir +'/supplementary/')
+                    ontc.readBamFile()
+        del(ontc)
+        gc.collect()
+    
+    if args.cont == 'all' or args.cont == 'bam' or args.cont == 'join':
+        #joinONTLRs
+        print()
+        print('=== joinONTLRs ===')
+        ds = glob.glob(args.inFiles)
+        if len(ds)==0:
+            print('ERROR (1)! No files were chosen:')
+            print(args.inFiles)
+            exit(1)
+        print('The number of files chosen:', len(ds))
+        print('Reading input files with', args.threads, 'threads...')
+        jl = JoinLR(ds, args)
+        print('The total number of fusions:', sum(len(item) for item in jl.allFusions.values()))
+        print('The total number of insertions:', sum(len(item) for item in jl.allInsertions.values()))
+        jl.joinAllSimilarLRs()
+        jl.writeFusionToOutput(args.outLrsFile)
+        jl.writeInsertionsToOutput(args.outInsFile)
+        del(jl)
+        gc.collect()
+        print()
 
-    #joinONTLRs
-    print()
-    print('=== joinONTLRs ===')
-    ds = glob.glob(args.inFiles)
-    if len(ds)==0:
-        print('ERROR (1)! No files were chosen:')
-        print(args.inFiles)
-        exit(1)
-    print('The number of files chosen:', len(ds))
-    print('Reading input files with', args.threads, 'threads...')
-    jl = JoinLR(ds, args)
-    print('The total number of fusions:', sum(len(item) for item in jl.allFusions.values()))
-    print('The total number of insertions:', sum(len(item) for item in jl.allInsertions.values()))
-    jl.joinAllSimilarLRs()
-    jl.writeFusionToOutput(args.outLrsFile)
-    jl.writeInsertionsToOutput(args.outInsFile)
-    del(jl)
-    gc.collect()
-    print()
+        # alignment INS
+        print()
+        print('=== alignment_INS ===')
+        alignINS_processor = InsertionProcessor(args.outInsFile, 
+                                                args.outLrsFile, 
+                                                args.refGen, 
+                                                args.nameINS, 
+                                                args.samFile,
+                                                args.threads, 
+                                                args.notRemoveTrashAlign)
+        alignINS_processor.read_insertions()
+        fasta_file = args.workDir +'/supplementary/'+ args.nameINS + '_insertions.fasta'
+        alignINS_processor.write_fasta(fasta_file)
+        alignINS_processor.map_with_minimap2(fasta_file)
+        alignINS_processor.analyze_mapping_results()
+        alignINS_processor.merge_tandem_duplications()
+        alignINS_processor.copy_file(args.outLrsFile, args.outLrsFile[:-4]+'_mapped_ins.csv')
+        alignINS_processor.extract_sequences_before_after()
+        alignINS_processor.update_large_rearrangements_file()
+        updated_csv = args.outInsFile[:-4]+'_mapped_ins.csv'
+        alignINS_processor.update_original_csv(updated_csv)
+        del(alignINS_processor)
+        gc.collect()
+        print('Analysis of INS was done!')
 
-    # alignment INS
-    print()
-    print('=== alignment_INS ===')
-    alignINS_processor = InsertionProcessor(args.outInsFile, 
-                                            args.outLrsFile, 
-                                            args.refGen, 
-                                            args.nameINS, 
-                                            args.samFile,
-                                            args.threads, 
-                                            args.notRemoveTrashAlign)
-    alignINS_processor.read_insertions()
-    fasta_file = args.workDir +'/supplementary/'+ args.nameINS + '_insertions.fasta'
-    alignINS_processor.write_fasta(fasta_file)
-    alignINS_processor.map_with_minimap2(fasta_file)
-    alignINS_processor.analyze_mapping_results()
-    alignINS_processor.merge_tandem_duplications()
-    alignINS_processor.copy_file(args.outLrsFile, args.outLrsFile[:-4]+'_mapped_ins.csv')
-    alignINS_processor.extract_sequences_before_after()
-    alignINS_processor.update_large_rearrangements_file()
-    updated_csv = args.outInsFile[:-4]+'_mapped_ins.csv'
-    alignINS_processor.update_original_csv(updated_csv)
-    del(alignINS_processor)
-    gc.collect()
-    print('Analysis of INS was done!')
-
-    # define types of LGRs
-    print()
-    print('=== define_type_create_vcf_LRs ===')
-    analyze_LR = AnalyzeLR(args=args)
-    analyze_LR.main_func()
+    if args.cont == 'all' or args.cont == 'bam' or args.cont == 'join' or args.cont == 'def':
+        # define types of LGRs
+        print()
+        print('=== define_type_create_vcf_LRs ===')
+        analyze_LR = AnalyzeLR(args=args)
+        analyze_LR.main_func()
 
