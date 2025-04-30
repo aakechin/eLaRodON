@@ -134,7 +134,10 @@ if __name__ == '__main__':
         print("ERROR: "+ str(e))
         sys.exit(1)
 
-    bam_file_name = args.bamFile.split('/')[-1][:-4]
+    bam_file_name_full = args.bamFile.split('/')[-1]
+    bam_file_name = bam_file_name_full[:bam_file_name_full.rfind('.')]
+    if bam_file_name[-3:] == 'bam':
+        bam_file_name = bam_file_name[:-4]
     bam_results_path = args.workDir +'/supplementary/' + bam_file_name 
 
     if not hasattr(args, 'inFiles') or args.inFiles is None:
