@@ -109,6 +109,9 @@ if __name__ == '__main__':
             raise FileNotFoundError("ERROR: " + arg_name + " does not exist: "+ path)
         return path
 
+    if args.workDir[-1]=='/':
+        args.workDir=args.workDir[:-1]
+
     try:
         check_path(args.bamFile, "--bam-file")
         check_path(args.refGen, "--ref-genome")
@@ -117,8 +120,9 @@ if __name__ == '__main__':
 
         if not os.path.isdir(args.workDir):
             os.makedirs(args.workDir, exist_ok=True)
-            os.makedirs(os.path.join(args.workDir, 'supplemetary'), exist_ok=True)
             print("NOTE: Created working directory at " + args.workDir)
+        if not os.path.isdir(os.path.join(args.workDir, 'supplementary')):
+            os.makedirs(os.path.join(args.workDir, 'supplementary'), exist_ok=True)
         
         if args.div_chroms and args.len_division <= 0:
             print('ERROR: Set the fragment size value for chromosome division!')
@@ -133,7 +137,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     bam_file_name = args.bamFile.split('/')[-1][:-4]
-    bam_results_path = args.workDir +'/supplemetary/' + bam_file_name 
+    bam_results_path = args.workDir +'/supplementary/' + bam_file_name 
 
     if not hasattr(args, 'inFiles') or args.inFiles is None:
         args.inFiles = bam_results_path+'.junction_stat.*.*ions.csv'
@@ -164,7 +168,7 @@ if __name__ == '__main__':
         chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v1}
     elif len(chrom_intersection_v2) == 25:
         chromosomes_dict = {k: v for k, v in chromosomes_dict.items() if k in chrom_intersection_v2}
-    for chrom, chrom_len in chromosomes_dict.items():
+    for chrom, chrom_len in sorted(chromosomes_dict.items()):
         if args.div_chroms == False:
             ontc=ONTLRCaller(args.bamFile,
                             chrom,
@@ -174,7 +178,7 @@ if __name__ == '__main__':
                             args.minVarLen,
                             args.minClipLen,
                             args.distToJoinTrl,
-                            args.workDir +'/supplemetary/')
+                            args.workDir +'/supplementary/')
             ontc.readBamFile()
         else:
             n = args.len_division
@@ -188,7 +192,7 @@ if __name__ == '__main__':
                                 args.minVarLen,
                                 args.minClipLen,
                                 args.distToJoinTrl,
-                                args.workDir +'/supplemetary/')
+                                args.workDir +'/supplementary/')
                 ontc.readBamFile()
 
     #joinONTLRs
@@ -220,7 +224,7 @@ if __name__ == '__main__':
                                             args.threads, 
                                             args.notRemoveTrashAlign)
     alignINS_processor.read_insertions()
-    fasta_file = args.workDir +'/supplemetary/'+ args.nameINS + '_insertions.fasta'
+    fasta_file = args.workDir +'/supplementary/'+ args.nameINS + '_insertions.fasta'
     alignINS_processor.write_fasta(fasta_file)
     alignINS_processor.map_with_minimap2(fasta_file)
     alignINS_processor.analyze_mapping_results()
