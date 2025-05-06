@@ -108,6 +108,9 @@ if __name__ == '__main__':
     
     args=par.parse_args()
 
+    if not os.path.isdir(args.workDir):
+        os.makedirs(args.workDir, exist_ok=True)        
+
     logging_path = args.workDir+'/elarodon.log'
     logging.basicConfig(level=logging.DEBUG, filename=logging_path, filemode="w",
                             format="%(asctime)s %(funcName)s %(lineno)d %(message)s")
