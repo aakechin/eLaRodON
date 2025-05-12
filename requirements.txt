@@ -1,6 +1,5 @@
-Bio==1.7.1
-biopython==1.83
-pandas==2.0.0
-pysam==0.22.0
+biopython==1.84
+pandas==2.2.2
+pysam==0.22.1
 toml==0.10.2
-tqdm==4.66.1
+tqdm==4.66.5
