@@ -114,24 +114,24 @@ class AnalyzeLR():
                         '##fileDate='+str(datetime.strftime(datetime.now(), "%d-%m-%Y")), '##source=NAME_OF_SOURCE', 
                         '##source_reads='+self.path_to_bam_file, '##reference='+self.reference_genome, 
                         '##mapping=-', '##phasing=none', '##depth_of_coverage=-']
-        header_list_2 = ['##ALT=<ID=INS,Description="Insertion of novel sequence relative to the reference">',
-                        '##ALT=<ID=INV,Description="Inversion relative to the reference">', 
-                        '##ALT=<ID=BND_INV,Description="Inversion relative to the reference (unconfirmed by multiple reads)">', 
-                        '##ALT=<ID=DEL,Description="Deletion relative to the reference">',
-                        '##ALT=<ID=BND_DEL,Description="Deletion relative to the reference (unconfirmed by multiple reads)">',
-                        '##ALT=<ID=TD,Description="Tandem duplication">',
-                        '##ALT=<ID=BND_TD,Description="Possible tandem duplication (one of the fragments is remoted)">',
-                        '##ALT=<ID=INVTD,Description="Inverted tandem duplication">',
-                        '##ALT=<ID=BND_INVTD,Description="Inverted tandem duplication (unconfirmed by multiple reads)">',
-                        '##ALT=<ID=TRL,Description="Translocation">',
-                        '##ALT=<ID=BND_TRL,Description="Two pieces of DNA adjacent to the breakpoint positions are directly connected to each other in the sample">',
+        header_list_2 = ['##ALT=<ID=<INS>,Description="Insertion of novel sequence relative to the reference">',
+                        '##ALT=<ID=<INV>,Description="Inversion relative to the reference">', 
+                        '##ALT=<ID=<BND_INV>,Description="Inversion relative to the reference (unconfirmed by multiple reads)">', 
+                        '##ALT=<ID=<DEL>,Description="Deletion relative to the reference">',
+                        '##ALT=<ID=<BND_DEL>,Description="Deletion relative to the reference (unconfirmed by multiple reads)">',
+                        '##ALT=<ID=<TD>,Description="Tandem duplication">',
+                        '##ALT=<ID=<BND_TD>,Description="Possible tandem duplication (one of the fragments is remoted)">',
+                        '##ALT=<ID=<INVTD>,Description="Inverted tandem duplication">',
+                        '##ALT=<ID=<BND_INVTD>,Description="Inverted tandem duplication (unconfirmed by multiple reads)">',
+                        '##ALT=<ID=<TRL>,Description="Translocation">',
+                        '##ALT=<ID=<BND_TRL>,Description="Two pieces of DNA adjacent to the breakpoint positions are directly connected to each other in the sample">',
                         
                         '##FILTER=<ID=FAIL,Description="None of genomic rearrangement types">',
                         '##FILTER=<ID=PASS,Description="Type of genomic rearrangement was determined">',
 
                         '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of genomic rearrangement (structural variant)">', 
                         '##INFO=<ID=CHROM2,Number=1,Type=String,Description="Second chromosome involved in the genomic rearrangement">',
-                        '##INFO=<ID=POS2,Number=1,Type=Integer,Description="End position of the genomic rearrangement">', 
+                        '##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the genomic rearrangement">', 
                         '##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Exact length of the insertion/deletion or approximate lenght of the tandem duplication/inversion">',
                         '##INFO=<ID=TDRN,Number=1,Type=Integer,Description="Number of tandem repeats">',
                         
@@ -2270,7 +2270,8 @@ class AnalyzeLR():
                 # val = list of rearrangements information
                 val = val[1]
                 for dict_LR_info in val:
-                    pass_no = 'ND'
+                    pass_no = 'PASS'
+                    lr_type_from_dict = '<'+dict_LR_info['Type']+'>'
                     if dict_LR_info['Type'] != 'INS':
                          # define repeats (or mobile elements) near to boundries of LGR
                         # print(self.repeats_from_id[dict_LR_info['LR_num']])
@@ -2459,8 +2460,8 @@ class AnalyzeLR():
                                 # print("dict_LR_info['SBLR']", dict_LR_info['SBLR'])
 
                         # PASS or FAIL
-                        # if qual == 0:
-                        #     pass_no = 'FAIL'
+                        if qual == 0:
+                            pass_no = 'FAIL'
 
                         if dict_LR_info['SBLR'] != set():
                             dict_LR_info['SBLR'] = ['LR'+str(x) if 'INS' not in str(x) else str(x) for x in list(dict_LR_info['SBLR'])]
@@ -2484,14 +2485,14 @@ class AnalyzeLR():
                         else:
                             dict_LR_info['SBINV'] = ['""']
 
-                        # false positive
-                        if (dict_LR_info['Type'] == 'BND_INV' and dict_LR_info['LR_len'] < 1000 or
-                            dict_LR_info['Type'] == 'BND_TD' and dict_LR_info['LR_len'] < 1000):
-                            pass_no = 'FP'
-                        # true positive
-                        elif (dict_LR_info['Type'] in ('TD', 'TRL', 'INV') and dict_LR_info['Read_Muts_median'] < 10 
-                            and dict_LR_info['SBLR'] != ['""'] and dict_LR_info['Read_Number'] == 1):
-                            pass_no = 'TP'
+                        # # false positive
+                        # if (dict_LR_info['Type'] == 'BND_INV' and dict_LR_info['LR_len'] < 1000 or
+                        #     dict_LR_info['Type'] == 'BND_TD' and dict_LR_info['LR_len'] < 1000):
+                        #     pass_no = 'FP'
+                        # # true positive
+                        # elif (dict_LR_info['Type'] in ('TD', 'TRL', 'INV') and dict_LR_info['Read_Muts_median'] < 10 
+                        #     and dict_LR_info['SBLR'] != ['""'] and dict_LR_info['Read_Number'] == 1):
+                        #     pass_no = 'TP'
                             
                         # debag
                         if dict_LR_info['Pos'] > dict_LR_info['Pos2'] and dict_LR_info['Type'] != 'TRL' and dict_LR_info['Type'] != 'BND_TRL':
@@ -2511,10 +2512,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
                                 +';DP='+str(dict_LR_info['Ref_Coverage']+dict_LR_info['Read_Number'])+';VAF='+str(vaf)
@@ -2540,10 +2541,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';D1='+str(dict_LR_info['Dist1'])+';D2='+str(dict_LR_info['Dist2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
@@ -2570,10 +2571,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
                                 +';DP='+str(dict_LR_info['Ref_Coverage']+dict_LR_info['Read_Number'])+';VAF='+str(vaf)
@@ -2599,10 +2600,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';D1='+str(dict_LR_info['Dist1'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
@@ -2628,10 +2629,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
                                 +';DP='+str(dict_LR_info['Ref_Coverage']+dict_LR_info['Read_Number'])+';VAF='+str(vaf)
@@ -2656,10 +2657,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
                                 +';DP='+str(dict_LR_info['Ref_Coverage']+dict_LR_info['Read_Number'])+';VAF='+str(vaf)
@@ -2685,10 +2686,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';D1='+str(dict_LR_info['Dist1'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
@@ -2715,10 +2716,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
                                 +';DP='+str(dict_LR_info['Ref_Coverage']+dict_LR_info['Read_Number'])+';VAF='+str(vaf)
@@ -2744,10 +2745,10 @@ class AnalyzeLR():
                                 str(dict_LR_info['Pos']),
                                 'LR'+str(dict_LR_info['LR_num']),
                                 'N',
-                                str(dict_LR_info['Type']),
+                                str(lr_type_from_dict),
                                 str(qual),
                                 str(pass_no),
-                                ('SVTYPE='+str(dict_LR_info['Type'])+';CHROM2='+str(dict_LR_info['Chrom2'])+';POS2='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])+';TDRN='+str(dict_LR_info['TDRN'])
+                                ('SVTYPE='+str(lr_type_from_dict)+';CHROM2='+str(dict_LR_info['Chrom2'])+';END='+str(dict_LR_info['Pos2'])+';SVLEN='+str(dict_LR_info['LR_len'])+';TDRN='+str(dict_LR_info['TDRN'])
                                 +';J1='+str(dict_LR_info['Junc_1'])+';J2='+str(dict_LR_info['Junc_2'])+';S1='+str(dict_LR_info['Strand1'])+';S2='+str(dict_LR_info['Strand2'])
                                 +';RL1='+str(dict_LR_info['Read_Len1'])+';RL2='+str(dict_LR_info['Read_Len2'])+';SR='+str(dict_LR_info['Read_Number'])+';MQ='+str(dict_LR_info['MQ_median'])
                                 +';DP='+str(dict_LR_info['Ref_Coverage']+dict_LR_info['Read_Number'])+';VAF='+str(vaf)
@@ -2809,10 +2810,10 @@ class AnalyzeLR():
                             str(dict_LR_info['Pos']),
                             'INS'+str(dict_LR_info['ID']),
                             'N',
-                            str(dict_LR_info['Type']),
+                            str(lr_type_from_dict),
                             str(qual),
                             str(pass_no),
-                            ('SVTYPE='+str(dict_LR_info['Type'])+';SVLEN='+str(dict_LR_info['LR_len'])+';SR='+str(dict_LR_info['Read_Number'])
+                            ('SVTYPE='+str(lr_type_from_dict)+';SVLEN='+str(dict_LR_info['LR_len'])+';SR='+str(dict_LR_info['Read_Number'])
                             +';MQ='+str(dict_LR_info['MQ_median'])+';DP='+str(dict_LR_info['Total_coverage'])+';VAF='+str(vaf)
                             +';MUTM='+str((dict_LR_info['Read_Muts_median']))+';MUTV='+str((dict_LR_info['Read_Muts_variance']))
                             +';SBLR='+str(','.join(dict_LR_info['SBLR']))
