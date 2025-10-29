@@ -1169,8 +1169,6 @@ class AnalyzeLR():
     # process every row in INS file
     def process_row_INS(self, row):
         
-        # start_time = monotonic()
-        # save information about insertions
         info_INS = {}
         info_INS['Type'] = 'INS'
         info_INS['Chrom'] = row['Chrom']
@@ -1183,23 +1181,26 @@ class AnalyzeLR():
         
         if info_INS['LR_len'] < 50:
             return {}
-        # end_time = monotonic()
-        # print('1: ', end_time-start_time)
         
-        # start_time = monotonic()
-        # save the percent of errors
-        read_muts = [int(round(float(x), 0)) for x in row['Read_Muts'].split(',')]
-        info_INS['Read_Muts_median'] = median(read_muts)
-        if len(read_muts) > 1:
-            info_INS['Read_Muts_variance'] = int(round(variance(read_muts),0))
+        read_muts_str = row['Read_Muts']
+        
+        if pd.isna(read_muts_str) or read_muts_str is None or read_muts_str == '':
+            read_muts = []
         else:
+            read_muts = [int(round(float(x), 0)) for x in str(read_muts_str).split(',') if x.strip()]
+        
+        if len(read_muts) > 0:
+            info_INS['Read_Muts_median'] = median(read_muts)
+            if len(read_muts) > 1:
+                info_INS['Read_Muts_variance'] = int(round(variance(read_muts), 0))
+            else:
+                info_INS['Read_Muts_variance'] = 0
+        else:
+            info_INS['Read_Muts_median'] = 0
             info_INS['Read_Muts_variance'] = 0
         
-        # end_time = monotonic()
-        # print('2:', end_time-start_time)
-        
         return info_INS
-        
+    
     # read a csv-file with information about insertions
     def read_file_INS(self):
         print()
