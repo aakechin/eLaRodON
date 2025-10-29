@@ -99,8 +99,9 @@ def main():
                     dest='VCFanno', type=str, required=True,
                     help="full path to the vcfanno binary file")
     par.add_argument("--bed_file", "-bed",
-                    dest='bedFile', type=str, required=True,
-                    help="full path to the bed-file with repeats and other genome elements for program annotation")
+                    dest='bedFile', type=str, required=False,
+                    help="full path to the bed-file with repeats and other genome elements for program annotation",
+                    default='')
     par.add_argument("--not_remove_trash_anno", "-nrt_anno",
                     dest='notRemoveTrashAnno', action='store_true', required=False,
                     help="use this parameter if you don't want to remove temporary files (.lua, .toml, directories with vcfanno results)",
@@ -130,7 +131,7 @@ def main():
         check_path(args.bamFile, "--bam-file")
         check_path(args.refGen, "--ref-genome")
         check_path(args.VCFanno, "--vcf_anno")
-        check_path(args.bedFile, "--bed_file")
+        # check_path(args.bedFile, "--bed_file")
 
         if not os.path.isdir(args.workDir):
             os.makedirs(args.workDir, exist_ok=True)

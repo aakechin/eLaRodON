@@ -17,6 +17,7 @@ from shutil import rmtree
 import toml
 import gzip
 import logging
+import tempfile
 
 
 class AnalyzeLR():
@@ -2827,6 +2828,13 @@ class AnalyzeLR():
                     # done_work += 1
                     # self.show_perc_work(done_work, all_work)
     
+    def create_empty_bed_file(self):
+        temp_bed = tempfile.NamedTemporaryFile(mode='w', suffix='.bed', delete=False)
+        self.temp_bed_file = temp_bed.name
+        with temp_bed:
+            temp_bed.write("chr1\t1\t2\tempty_region\n")
+        return self.temp_bed_file
+    
     # general function
     def main_func(self):
         # read the bam-file with all contigs --> save contigs names
@@ -2867,26 +2875,41 @@ class AnalyzeLR():
                 temp_2_vcf.write(line+'\n')
         self.build_temp_vcf_data()
         # adjust bed file
+        # adjust bed file
         print('Preparing files for vcfanno...')
         logging.info('Preparing files for vcfanno...')
-        self.path_bed_adjusted = self.path_bed[:-4] + '_adjusted.bed'
-        self.adjust_bed_coordinates(self.path_bed, self.path_bed_adjusted)
+
+        # check if BED file is empty
+        if self.path_bed != '': 
+            self.path_bed_adjusted = self.path_bed[:-4] + '_adjusted.bed'
+            self.adjust_bed_coordinates(self.path_bed, self.path_bed_adjusted)
+            self.process_bed_file(self.path_bed_adjusted)
+            bed_file_for_toml = self.compressed_bed_path
+        else:
+            # create empty file
+            bed_file_for_toml = self.create_empty_bed_file()
+            logging.info('BED file not provided, using empty bed file for structure preservation')
+
         self.create_lua_file(self.path_lua)
-        self.process_bed_file(self.path_bed_adjusted)
-        self.create_toml_file(self.compressed_bed_path, self.path_toml)
+        self.create_toml_file(bed_file_for_toml, self.path_toml)
+
         # delete data from dict with pos2
         self.general_dict_LR_pos2 = {}
+
         # annotate repeats near the ends of rearrangements
         print('Using vcfanno...')
         logging.info('Using vcfanno...')
+
         sp.check_output(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos1+" > "+self.temp_vcf_ann_1, shell=True, stderr=sp.STDOUT).decode('utf-8')
         sp.check_output(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos2+" > "+self.temp_vcf_ann_2, shell=True, stderr=sp.STDOUT).decode('utf-8')
         logging.info(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos1+" > "+self.temp_vcf_ann_1)
         logging.info(self.path_vcfanno+" -lua "+self.path_lua+" "+self.path_toml+" "+self.temp_vcf_file_pos2+" > "+self.temp_vcf_ann_2)
+
         # read annotation results
         print('Saving the results of rearrangement analysis for overlapping genomic elements...')
         logging.info('Saving the results of rearrangement analysis for overlapping genomic elements...')
         self.read_results_vcfanno()
+
         if self.not_remove_trash == False:
             if os.path.isdir(self.temp_dir):
                 rmtree(self.temp_dir)
@@ -2895,7 +2918,12 @@ class AnalyzeLR():
             logging.info('os.remove(self.path_toml) '+self.path_toml)
             os.remove(self.path_lua)
             logging.info('os.remove(self.path_lua) '+self.path_lua)
-        # define secondary boundries and connectes INS
+            
+            # delete empty BED file
+            if self.path_bed == '' and hasattr(self, 'temp_bed_file'):
+                os.remove(self.temp_bed_file)
+                logging.info('os.remove(temp_bed_file) '+self.temp_bed_file)
+
         for key, val in self.types_secondary_boundry.items():
             types_secondary_boundry_list = list(zip(val[0], val[1], val[2], val[3], val[4], val[5], val[6]))
             types_secondary_boundry_list.sort(key=lambda x: x[0])
@@ -2906,14 +2934,14 @@ class AnalyzeLR():
                                         [x[4] for x in types_secondary_boundry_list],
                                         [x[5] for x in types_secondary_boundry_list],
                                         [x[6] for x in types_secondary_boundry_list]]
-        # print(self.ins_chrom_dict)
+
         for key, val in self.ins_chrom_dict.items():
             ins_chrom_list = list(zip(val[0], val[1], val[2]))
             ins_chrom_list.sort(key=lambda x: x[0])
             self.ins_chrom_dict[key] = [[x[0] for x in ins_chrom_list],
                                         [x[1] for x in ins_chrom_list],
                                         [x[2] for x in ins_chrom_list]]
-        # print(self.ins_chrom_dict)
+
         self.define_boundries()
         # write data to vcf-file
         self.build_new_vcf_data()
