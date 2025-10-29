@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: elarodon
-Version: 0.1.3
+Version: 0.1.5
 Summary: A comprehensive pipeline for detection and analysis of large genomic rearrangements from Oxford Nanopore Technologies (ONT) sequencing data.
 Home-page: https://github.com/aakechin/eLaRodON
 Author: Kechin A., Mikheeva R.

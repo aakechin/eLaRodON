@@ -2830,10 +2830,11 @@ class AnalyzeLR():
     
     def create_empty_bed_file(self):
         temp_bed = tempfile.NamedTemporaryFile(mode='w', suffix='.bed', delete=False)
-        self.temp_bed_file = temp_bed.name
+        self.path_bed = temp_bed.name
         with temp_bed:
             temp_bed.write("chr1\t1\t2\tempty_region\n")
-        return self.temp_bed_file
+        print(f'Temporary file was created: {self.path_bed}')
+        return self.path_bed
     
     # general function
     def main_func(self):
@@ -2880,16 +2881,15 @@ class AnalyzeLR():
         logging.info('Preparing files for vcfanno...')
 
         # check if BED file is empty
-        if self.path_bed != '': 
-            self.path_bed_adjusted = self.path_bed[:-4] + '_adjusted.bed'
-            self.adjust_bed_coordinates(self.path_bed, self.path_bed_adjusted)
-            self.process_bed_file(self.path_bed_adjusted)
-            bed_file_for_toml = self.compressed_bed_path
-        else:
-            # create empty file
+        if self.path_bed == '': 
             bed_file_for_toml = self.create_empty_bed_file()
             logging.info('BED file not provided, using empty bed file for structure preservation')
 
+        self.path_bed_adjusted = self.path_bed[:-4] + '_adjusted.bed'
+        self.adjust_bed_coordinates(self.path_bed, self.path_bed_adjusted)
+        self.process_bed_file(self.path_bed_adjusted)
+        bed_file_for_toml = self.compressed_bed_path
+        
         self.create_lua_file(self.path_lua)
         self.create_toml_file(bed_file_for_toml, self.path_toml)
 

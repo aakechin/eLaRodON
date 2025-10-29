@@ -35,8 +35,17 @@ deploy:
 	@echo "Preparing to upload to $(REPOSITORY)..."
 	@test -n "$(PYPI_TOKEN)" || { echo "❌ ERROR: PYPI_TOKEN is not set"; exit 1; }
 	@echo "Uploading using token: $(shell echo $(PYPI_TOKEN) | cut -c1-4)...$(shell echo $(PYPI_TOKEN) | rev | cut -c1-4 | rev)"
+
 	@TWINE_USERNAME=__token__ TWINE_PASSWORD="$(PYPI_TOKEN)" \
 		$(TWINE) upload dist/*
+	
+# 	@TWINE_USERNAME=__token__ TWINE_PASSWORD="$(PYPI_TOKEN)" \
+# 		$(TWINE) upload dist/elarodon-0.1.5-py3-none-any.whl
+	
+# 	@TWINE_USERNAME=__token__ TWINE_PASSWORD="$(PYPI_TOKEN)" \
+# 		$(TWINE) upload dist/elarodon-0.1.5.tar.gz
+	
+	
 	@echo "\n✅ Upload complete! Package now available on:"
 	@test "$(REPOSITORY)" = "pypi" \
 		&& echo "https://pypi.org/project/$(PACKAGE_NAME)/" \

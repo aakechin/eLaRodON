@@ -1,8 +1,13 @@
-from elarodon.read_bam_file import BamReader
-from elarodon.ONTLRcaller import ONTLRCaller
-from elarodon.joinONTLRs import JoinLR
-from elarodon.alignment_INS import InsertionProcessor
-from elarodon.define_type_create_vcf_LRs import AnalyzeLR
+# from elarodon.read_bam_file import BamReader
+# from elarodon.ONTLRcaller import ONTLRCaller
+# from elarodon.joinONTLRs import JoinLR
+# from elarodon.alignment_INS import InsertionProcessor
+# from elarodon.define_type_create_vcf_LRs import AnalyzeLR
+from read_bam_file import BamReader
+from ONTLRcaller import ONTLRCaller
+from joinONTLRs import JoinLR
+from alignment_INS import InsertionProcessor
+from define_type_create_vcf_LRs import AnalyzeLR
 import argparse
 from multiprocessing import cpu_count
 import glob
