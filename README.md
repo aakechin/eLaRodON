@@ -162,7 +162,6 @@ elarodon \
     -bam sample.bam \
     -ref hg38.fa \
     -vcfanno path/to/vcfanno \
-    -bed annotations.bed \
     -th 4
 ```
 
@@ -175,13 +174,13 @@ elarodon \
 | `-bam, --bam_file`         | Yes         | BAM file            |
 | `-dir, --workdir` |	Yes |	Output directory |
 | `-ref, --ref-genome` |	Yes |	Reference genome FASTA|
-|`-bed, --bed-file`|	Yes	| Annotation BED file |
 | `-vcfanno, --vcf-anno`	|Yes	|vcfanno executable path |
 
 **Processing Parameters**
 
 |Parameter	| Default	 | Required | Description |
 | :---        |    :----:   |  :----:   |        ---: |
+|`-bed, --bed-file`|	False | No	| Annotation BED file |
 |`-div, --divide-chroms`|	False | No |	Divide chromosome to analyze |
 |`-dvlen, --div-length`|	None | No |	Length of regions for division chromosome to analyze |
 |`-len, --minimal-length`|	50| No |Min variant length (bp)|
