@@ -134,25 +134,30 @@ The tool demonstrates particular strength in identifying complex rearrangements 
 
 > 💡 Pro tip: see full list of program versions in [requirements.txt](/requirements.txt)
 
-## 1. Clone the Repository
-
-    git clone https://github.com/aakechin/eLaRodON.git
+## 1. Install eLaRodON via pip
+```bash
+pip install elarodon
+```
 
 ## 2. Install Dependencies
 
-    pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
 
 ## 3. Verify Installation
 
-    python3 ./eLaRodON-main/main.py -h
+```bash
+elarodon -h
+```
 
 > No errors = successful installation
 
 # Quick Start
 
 ### Basic Pipeline Execution
-```python
-python3 main.py \
+```bash
+elarodon \
     -dir ./results_elarodon \
     -bam sample.bam \
     -ref hg38.fa \
@@ -204,8 +209,8 @@ python3 main.py \
 
 *To view all parameters and their descriptions, you can use* 
 
-```python
-python3 main.py -h
+```bash
+elarodon -h
 ```
 
 # Output Files
@@ -225,8 +230,8 @@ samtools index sample.bam
 ```
 
 Full Analysis
-```python
-python3 main.py \
+```bash
+elarodon \
     -bam sample.bam \
     -dir lr_results \
     -ref hg38.fa \
@@ -265,7 +270,7 @@ Too many open files
 ```
 **Solution**: 
 
-Run before eLaRodN: 
+Run before eLaRodON: 
 ```bash
 ulimit -n 4096
 ```
