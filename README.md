@@ -1,12 +1,12 @@
-# eLaRodON
+# **eLaRodON**
 
-A comprehensive pipeline for detection and analysis of large genomic rearrangements from Oxford Nanopore Technologies (ONT) sequencing data.
+### A comprehensive pipeline for detection and analysis of large genomic rearrangements from Oxford Nanopore Technologies (ONT) sequencing data.
 
 ![Python](https://img.shields.io/badge/Python-3.7%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## Table of Contents
-- [Overview](#overview)
+- [Overview](#overview-elarodon)
 - [Installation](#installation)
   - [Dependencies](#dependencies)
   - [Install eLaRodON via pip](#install-elarodon-via-pip)
@@ -21,9 +21,9 @@ A comprehensive pipeline for detection and analysis of large genomic rearrangeme
 - [Citation](#citation)
 - [License](#license)
 
-# Overview
+# Overview eLaRodON
 
-The ONTLRcaller pipeline performs detection and characterization of large genomic rearrangements through four integrated modules:
+The **eLaRodON** pipeline performs detection and characterization of large genomic rearrangements through four integrated modules:
 
 [![](https://mermaid.ink/img/pako:eNpVkFFrgzAUhf9KuM-26NQa8zBodYXC6KAbe5gWCXptHZpIjNu62v--aDfK7lNOzndykpwhlwUCg4Pi7ZG8xKkgZpbJ0_blcZfzuka1J7PZ_bDjn2TU3UBWybusxER0-2tgNTHrqtaosCDGGEiU8Lo6iAaFzjbb53_kRnSodCXFyF2NaDKWQkjNNRYDiZMCy0pgpk8tZrlCs5195GV2q41_awWviex12-uBPCSv0ZqUVY17sMy7qgKYVj1a0KBq-CjhPMZT0EdsMAVmlqaK97VOIRUXE2u5eJOy-Usq2R-OwEped0b1bWGuElfcfNoNQVGgimQvNDAnmI4AdoYvYG7gzD0npAubuiH13MC34ATMC-bUufMdx_M8O3ToxYLvqdOe08C3zQSh6_shpYvLD7JJhTs?type=png)](https://mermaid.live/edit#pako:eNpVkFFrgzAUhf9KuM-26NQa8zBodYXC6KAbe5gWCXptHZpIjNu62v--aDfK7lNOzndykpwhlwUCg4Pi7ZG8xKkgZpbJ0_blcZfzuka1J7PZ_bDjn2TU3UBWybusxER0-2tgNTHrqtaosCDGGEiU8Lo6iAaFzjbb53_kRnSodCXFyF2NaDKWQkjNNRYDiZMCy0pgpk8tZrlCs5195GV2q41_awWviex12-uBPCSv0ZqUVY17sMy7qgKYVj1a0KBq-CjhPMZT0EdsMAVmlqaK97VOIRUXE2u5eJOy-Usq2R-OwEped0b1bWGuElfcfNoNQVGgimQvNDAnmI4AdoYvYG7gzD0npAubuiH13MC34ATMC-bUufMdx_M8O3ToxYLvqdOe08C3zQSh6_shpYvLD7JJhTs)
 
