@@ -8,10 +8,13 @@ A comprehensive pipeline for detection and analysis of large genomic rearrangeme
 ## Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Detailed Usage](#detailed-usage)
+  - [Input Requirements](#input-requirements)
+- [Algorithm By Steps](#algorithm-by-steps)
+- [Usage](#usage)
+  - [Minimal Working Example](#minimal-working-example)
+  - [Arguments](#arguments)
+  - [Full Analysis](#full-analysis)
 - [Output Files](#output-files)
-- [Example](#example)
 - [Troubleshooting](#troubleshooting)
 - [Citation](#citation)
 - [License](#license)
@@ -220,8 +223,7 @@ elarodon \
     -vcfanno path/to/vcfanno \
     -th 4
 ```
-
-## Detailed Usage
+## Arguments
 
 ### Core Arguments
 
@@ -283,7 +285,7 @@ elarodon -cont def -dir ./results -ref hg38.fa -vcfanno ./vcfanno -bed new_annot
 elarodon -h
 ```
 
-## Full Analysis
+## Detailed Usage
 
 ```bash
 elarodon \
