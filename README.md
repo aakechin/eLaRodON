@@ -8,7 +8,9 @@ A comprehensive pipeline for detection and analysis of large genomic rearrangeme
 ## Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
-  - [Input Requirements](#input-requirements)
+  - [Dependencies](#dependencies)
+  - [Install eLaRodON via pip](#install-elarodon-via-pip)
+- [Input Requirements](#input-requirements)
 - [Algorithm By Steps](#algorithm-by-steps)
 - [Usage](#usage)
   - [Minimal Working Example](#minimal-working-example)
