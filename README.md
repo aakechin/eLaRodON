@@ -7,6 +7,7 @@
 
 ## Table of Contents
 - [Overview](#overview-elarodon)
+- [Quick Start](#quick-start)
 - [Installation](#installation)
   - [Dependencies](#dependencies)
   - [Install eLaRodON via pip](#install-elarodon-via-pip)
@@ -15,11 +16,41 @@
 - [Usage](#usage)
   - [Minimal Working Example](#minimal-working-example)
   - [Arguments](#arguments)
-  - [Full Analysis](#full-analysis)
+  - [Detailed Usage](#detailed-usage)
 - [Output Files](#output-files)
 - [Troubleshooting](#troubleshooting)
 - [Citation](#citation)
 - [License](#license)
+
+# Quick Start
+
+## Install & run in 3 commands:
+```bash
+# 1. Install eLaRodON
+pip install elarodon
+
+# 2. Install dependencies (via conda)
+conda install -c bioconda minimap2 samtools
+# Download vcfanno: https://github.com/brentp/vcfanno/releases
+
+# 3. Run analysis
+elarodon \
+    -dir ./results \
+    -bam sample.bam \
+    -ref hg38.fa \
+    -vcfanno /path/to/vcfanno \
+    -th 4
+```
+
+## Prerequisites:
+
+**Sorted & indexed BAM**: `samtools sort sample.bam` && `samtools index sample.bam`
+
+- Indexed reference: `samtools faidx hg38.fa`
+- External tools: `minimap2`, `samtools`, `vcfanno` in PATH
+- Results in: `./results/*_all_LGRS.vcf`
+
+*For detailed usage, see sections below.*
 
 # Overview eLaRodON
 
