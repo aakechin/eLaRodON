@@ -177,8 +177,9 @@ pip install elarodon
 ```bash
 elarodon -h
 ```
+## Clone the Repository
 
-## Also you can clone the repository and run without installation, but you'll still need to install the dependencies via pip 
+### Also you can clone the repository and run without installation, but you'll still need to install the dependencies via pip 
 
 ```bash
 git clone https://github.com/aakechin/eLaRodON.git
