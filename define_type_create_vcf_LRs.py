@@ -835,6 +835,10 @@ class AnalyzeLR():
                         info_LR['Type'] = 'DEL'
                     else:
                         info_LR['Type'] = 'BND_DEL'
+                    if info_LR['Pos'] - int(info_LR['Inter_Most_Freq_Seq']) > 0:
+                        info_LR['Pos'] -= int(info_LR['Inter_Most_Freq_Seq'])
+                    else:
+                        false_LGR = True
                     info_LR['LR_len'] = info_LR['Pos2'] - info_LR['Pos'] + 1
                     # it is neccessary that pos2 > pos1 
                     if info_LR['LR_len'] < 0:
