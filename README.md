@@ -188,9 +188,9 @@ python3 -m venv .elvenv
 source .elvenv/bin/activate
 pip install -r requirements.txt
 ```
-And download vcfanno:
+And download `vcfanno`:
 
-`vcfanno`: Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
+Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
 
 ### Verify Installation
 
