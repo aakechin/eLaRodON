@@ -184,13 +184,18 @@ elarodon -h
 ```bash
 git clone https://github.com/aakechin/eLaRodON.git
 cd eLaRodON
+python3 -m venv .elvenv
+source .elvenv/bin/activate
 pip install -r requirements.txt
 ```
+And download vcfanno:
+
+`vcfanno`: Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
 
 ### Verify Installation
 
 ```bash
-./elarodon/main.py -h
+python3 main.py -h
 ```
 
 # Input Requirements
