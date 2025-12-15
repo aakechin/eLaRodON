@@ -219,13 +219,13 @@ samtools index sample.bam
 
 ## BED-file
 
-- **Format**: Standard 3-column BED format (chromosome, start, end) **without header**
+- **Format**: Standard 3-column BED format (chromosome, start, end) **without header**. **It is also recommended** to use a format with a 4th column with the name of the genomic element.
 - **Purpose**: Used to annotate variants with genomic features (repeats, genes, etc.)
 - **Example**:
 ```bed
-chr1  10000  10400  ALU
-chr1  15000  15200  LINE1
-chr2  5000   5200   SVA
+chr1  10000  10400  (ALU)
+chr1  15000  15200  (LINE1)
+chr2  5000   5200   (SVA)
 ```
 
 # Algorithm By Steps
