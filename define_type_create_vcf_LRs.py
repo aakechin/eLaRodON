@@ -1370,7 +1370,10 @@ class AnalyzeLR():
             chromosome = fields[0]
             start = int(fields[1])
             end = int(fields[2])
-            name_el = fields[3]
+            try:
+                name_el = fields[3]
+            except IndexError:
+                name_el = str(start) + '_' + str(end)
             new_start = str(max(1, start - 200))
             new_end = str(end + 200)
             outfile.write(chromosome+'\t'+new_start+'\t'+new_end+'\t'+name_el+'\n')
