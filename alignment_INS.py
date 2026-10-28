@@ -78,6 +78,9 @@ class InsertionProcessor:
                 if line.startswith('@'):
                     continue
                 parts = line.split('\t')
+                # only the primary alignment of each inserted sequence (otherwise reads are counted twice)
+                if int(parts[1]) & (4 | 256 | 2048):
+                    continue
                 # print('parts', parts)
                 # input()
                 read_id = parts[0]
@@ -101,7 +104,8 @@ class InsertionProcessor:
         self.merged_insertions = defaultdict(list)
         for ins_id_1, map_pos_1, length_1 in self.tandem_duplications:
             for ins_id_2, map_pos_2, length_2 in self.tandem_duplications:
-                if abs(map_pos_1 - map_pos_2) < 50 and abs(length_1 - length_2):
+                # the same 50 bp tolerance for positions and lengths
+                if ins_id_1 != ins_id_2 and abs(map_pos_1 - map_pos_2) < 50 and abs(length_1 - length_2) < 50:
                     self.merged_insertions[ins_id_1].append((ins_id_2, map_pos_2, length_2))
                     self.merged_insertions[ins_id_2].append((ins_id_1, map_pos_1, length_1))
         # print('self.merged_insertions', self.merged_insertions)
@@ -172,7 +176,7 @@ class InsertionProcessor:
         rows = []
         for ins_id, map_pos, length in self.tandem_duplications:  
             self.insertions[ins_id]['ID'] = ins_id
-            self.insertions[ins_id]['map_pos'] = ins_id
+            self.insertions[ins_id]['map_pos'] = map_pos
             rows.append(self.insertions[ins_id])
 
         # create pool
@@ -211,12 +215,14 @@ class InsertionProcessor:
                     ins_info = self.insertions[ins_id]
                     # print('ins_info', ins_info)
                     # input()
+                    # the inserted sequence is a copy of the reference segment [map_pos, map_pos+length];
+                    # the 'D' branch of define_type_create_vcf_LRs.py reads Pos1 as "end of segment,start of segment"
                     lr_file.write('\t'.join([str(ins_info['Chrom']), # Chrom1
-                                            str(map_pos)+','+str(ins_info['Pos']), # Pos1
+                                            str(map_pos+length)+','+str(map_pos), # Pos1
                                             '+', # Strand1
                                             'D', # Junction_Side1
                                             str(ins_info['Chrom']), # Chrom2
-                                            str(map_pos)+','+str(map_pos+length), # Pos2
+                                            str(map_pos+length)+','+str(map_pos+length), # Pos2
                                             '+', # Strand2
                                             'D', # Jinction_Side2
                                             str(ins_info['Read_Number']), # Read_Number
@@ -269,12 +275,15 @@ class InsertionProcessor:
                     
 
                     if ins_id not in uniq:
+                        # same order as for a single insertion, segment [mean map_pos, + mean length]
+                        seg_start = round(mean(map_poses))
+                        seg_end = seg_start + round(mean(map_lens))
                         lr_file.write('\t'.join([str(ins_info_main[0]['Chrom']), # Chrom1
-                                            str(min(map_poses))+','+str(max(poses)), # Pos1
+                                            str(seg_end)+','+str(seg_start), # Pos1
                                             '+', # Strand1
                                             'D', # Junction_Side1
                                             str(ins_info_main[0]['Chrom']), # Chrom2
-                                            str(round(mean(map_poses)))+','+str(round(mean(map_poses))+round(mean(map_lens))), # Pos2
+                                            str(seg_end)+','+str(seg_end), # Pos2
                                             '+', # Strand2
                                             'D', # Jinction_Side2
                                             str(sum(rn)), # Read_Number
