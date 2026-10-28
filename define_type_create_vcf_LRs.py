@@ -740,7 +740,8 @@ class AnalyzeLR():
                 # print('FALSE TD', info_LR)
                 false_LGR = True
             # length of LGR is length of duplicated fragment (at least 2 repeats of fragment)
-            info_LR['LR_len'] = (info_LR['Pos2'] - info_LR['Pos'] + 1) * repeat_num
+            # length of the added copies (without the copy present in the reference), as SVLEN of DUP in VCF
+            info_LR['LR_len'] = (info_LR['Pos2'] - info_LR['Pos'] + 1) * (repeat_num - 1)
             # in this case we need to consider NewSeq as a part of TD length
             info_LR['LR_len'] += int(round(info_LR['NewSeq_Most_Freq_Seq'] * (info_LR['NewSeq_Num'] / info_LR['Read_Number'])))
             # minus difference between starts of fragments 
@@ -2788,16 +2789,16 @@ class AnalyzeLR():
                     
                     # similar calculations for insertions
                     else:
-                        alt_cov_to_prob = (1.27*dict_LR_info['Read_Number'])/(2.512+dict_LR_info['Read_Number'])
+                        alt_cov_to_prob = min((1.27*dict_LR_info['Read_Number'])/(2.512+dict_LR_info['Read_Number']), 1)
                         vaf = dict_LR_info['Read_Number'] / dict_LR_info['Total_coverage']
-                        vaf_to_prob = (1.218*vaf)/(0.095+vaf)
+                        vaf_to_prob = min((1.218*vaf)/(0.095+vaf), 1)
                         if dict_LR_info['MQ_median'] >= 60:
                             mq_to_prob = 1
                         else:
                             mq_median = dict_LR_info['MQ_median']
-                            mq_to_prob =  0.000282*(mq_median**2)-0.003384
+                            mq_to_prob = min(0.000282*(mq_median**2)-0.003384, 1)
                         qual = alt_cov_to_prob * vaf_to_prob * mq_to_prob
-                        qual = round(qual*100, 2) 
+                        qual = min(100, round(qual*100, 2))
                         vaf = round(vaf, 2) 
                         if qual <= 0:
                             qual = 0.0

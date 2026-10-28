@@ -30,7 +30,7 @@
 pip install elarodon
 
 # 2. Install dependencies (via conda)
-conda install -c bioconda minimap2 samtools
+conda install -c bioconda minimap2 samtools bedtools
 # Download vcfanno: https://github.com/brentp/vcfanno/releases
 
 # 3. Run analysis
@@ -162,6 +162,8 @@ The tool demonstrates particular strength in identifying complex rearrangements 
 - minimap2: `conda install -c bioconda minimap2` or download from [GitHub](https://github.com/lh3/minimap2)
 
 - samtools & htslib: `conda install -c bioconda samtools`
+
+- bedtools: `conda install -c bioconda bedtools`
 
 - vcfanno: Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
 
