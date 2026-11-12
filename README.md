@@ -473,3 +473,11 @@ Please cite:
 # License
 
 [MIT License](/LICENSE)
+
+## Reproducible public-data benchmark
+
+The [benchmark guide](benchmark/README.md) describes the NA12878 chromosome 22 demo,
+image preparation with a bundled test BAM, use of an existing hg19 reference, output
+plots/tables and paired Truvari comparisons against the golden set and full SvABA.
+It also explains the bundled M. tuberculosis curated CSV reference annotations and
+which external VCF inputs are needed to reproduce the bacterial comparison curves.
