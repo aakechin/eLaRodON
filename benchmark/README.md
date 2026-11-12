@@ -4,11 +4,11 @@ This directory reproduces the comparison of eLaRodON with Sniffles2, SVIM, NanoV
 on the NA12878 cell line (Figure 5B of the article) on a small test dataset: NA12878 reads (ONT, rel7, 40x,
 minimap2, hg19) aligned to chromosome 22.
 
-The Docker image contains every tool in the version used in the article, each in its own conda environment:
+The Dockerfile installs every tool in the version used in the article, each in its own conda environment:
 
 | Tool | Version | Command (as in the article) |
 |---|---|---|
-| eLaRodON | v1.1.0 (GitHub tag) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
+| eLaRodON | ec95ede (caller fixes; release tag pending) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
 | Sniffles2 | 2.7.1 | `sniffles -i BAM -v OUT.vcf --tandem-repeats human_hg19_chr.trf.bed --threads N` |
 | SVIM | 2.0.0 | `svim alignment OUT BAM REF --sample NA12878` |
 | NanoVar | 1.8.3 | `nanovar -t N BAM REF OUT` |
@@ -26,19 +26,21 @@ the runs of the article for SVIM (1219), NanoVar (164), NanoSV (272) and Severus
 ## 1. Get the image
 
 ```bash
-docker pull [IMAGE]                       # or build it: docker build -t elarodon-benchmark .
+# Build from the published pre-release commit; run from this benchmark directory.
+docker build --build-arg ELARODON_VERSION=fad19a6 -t elarodon-benchmark:revision .
 ```
 
 ## 2. Get the data
 
 ```bash
 mkdir -p data && cd data
-# test BAM (NA12878, chromosome 22) and its index
-wget [BAM_URL] [BAI_URL]
+# Place NA12878_rel7_hg19_40x_chr22.bam and its .bam.bai index here.
+# Download URLs will be added when the dataset is deposited.
+# Alternatively, extract the test BAM from the full NA12878 BAM using make_test_bam.sh.
 # hg19 reference (UCSC, chr names), about 3 GB unpacked
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
 gunzip hg19.fa.gz
-docker run --rm -v "$PWD":/data [IMAGE] micromamba run -n elarodon samtools faidx /data/hg19.fa
+docker run --rm -v "$PWD":/data elarodon-benchmark:revision micromamba run -n elarodon samtools faidx /data/hg19.fa
 cd ..
 ```
 
@@ -50,7 +52,7 @@ alignments on other chromosomes, and the tools read the reference around them.
 The run needs at least 16 GB of memory: eLaRodON takes up to 9.3 GB and NanoVar up to 11 GB on the test BAM.
 
 ```bash
-docker run --rm -v "$PWD/data":/data [IMAGE] \
+docker run --rm -v "$PWD/data":/data elarodon-benchmark:revision \
     run_benchmark.sh --bam /data/NA12878_rel7_hg19_40x_chr22.bam --ref /data/hg19.fa \
     --chrom chr22 --threads 4 --out /data/results
 ```
@@ -151,3 +153,31 @@ AP depends on a few calls, so the test checks reproducibility, not the ranking o
   starts its argument parser.
 * The test BAM contains only the alignments located on chromosome 22. Reads with the primary alignment on
   another chromosome are present only through their supplementary alignments on chromosome 22.
+
+## Additional analysis scripts
+
+The repository-level `scripts/` directory contains the reference-set construction and table scripts.
+These use explicit input paths and do not require the authors' directory layout.
+
+```bash
+python3 scripts/make_chr1_table.py chr1.xlsx --vcf eLaRodON=/path/to/elarodon.vcf
+python3 scripts/make_na12878_reference_set.py 200 reference_results --inputs inputs.json
+python3 scripts/mtub_roc_pr.py mtub_results --vcf-root=/path/to/mtub/vcf
+```
+
+Run these commands from the repository root. `make_chr1_table.py` accepts `--truth FILE`,
+`--chrom NAME`, and repeated `--vcf TOOL=FILE` arguments. Its default reference is the bundled
+2363-event set. The reference-set builder requires directories for the keys `svaba_path`,
+`elarodon_path`, `svim_path`, `sniffles_path`, `nanovar_path`, `nanosv_path`, and `severus_path`
+in a JSON object. Relative paths are resolved against the JSON file location. Keep each caller's
+VCFs in its own directory and keep the original SvABA filenames (`*.svaba.sv.vcf` and
+`*.svaba.indel.vcf`). Input VCFs for these additional scripts must be uncompressed.
+
+For M. tuberculosis, the VCF layout is `VCF_ROOT/CALLER/SAMPLE/*.vcf`, with caller directories
+`elarodon`, `nanosv`, `nanovar`, `sniffles`, `svim`, and `severus`; use `--csv-root=DIR`
+to override the bundled curated CSVs. `--mosaic-root=DIR` supplies optional mosaic runs,
+and `--lowsupport --lowsupport-root=DIR` supplies the additional low-support runs.
+The VCFs used for the full study are external inputs; the repository does not bundle those calls.
+
+The pre-release build is not a published v1.1.0 release. Final image identifiers, dataset download
+links and DOI will be recorded after deposition and container validation.

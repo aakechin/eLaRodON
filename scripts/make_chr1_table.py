@@ -14,7 +14,8 @@ not compared; FILTER is not used;
 if several calls match one SvABA variant, only the first enters the ROC (all of them get "+" in the table).
 Sniffles2 mosaic is parsed like Sniffles2.
 
-Usage: python3 make_chr1_table.py <output.xlsx> [--as-published]
+Usage: python3 make_chr1_table.py <output.xlsx> --vcf Tool=FILE [--vcf Tool=FILE ...]
+       [--truth FILE] [--chrom chr1] [--as-published]
 """
 import os
 import re
@@ -23,26 +24,12 @@ import sys
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-REL7 = '/media/regina/MR_GREY/human/rel7'
-SVABA = f'{REL7}/results_svaba_compare/matched_svaba_variants.vcf'
-PROGRAMS = [
-    ('eLaRodON', f'{REL7}/vcf_hg19/filtered_elarodon/rel7_on_hg19_minimap2_mapont_sorted.40_all_LGRS.vcf'),
-    ('NanoSV', f'{REL7}/vcf_hg19/filtered_nanosv/nanosv_rel7_hg19_40.vcf'),
-    ('NanoVar', f'{REL7}/vcf_hg19/filtered_nanovar/rel7_on_hg19_minimap2_mapont_sorted.40.nanovar.pass.vcf'),
-    ('SVIM', f'{REL7}/vcf_hg19/filtered_svim/SVIM_rel7_hg19_40.vcf'),
-    ('Sniffles2', f'{REL7}/vcf_hg19/filtered_sniffles/sniffles_rel7_40_hg19.vcf'),
-    ('Sniffles2_mosaic', f'{REL7}/vcf_hg19/filtered_sniffles.mosaic/sniffles_rel7_mosaic_40_hg19.vcf'),
-    ('Severus', f'{REL7}/vcf_hg19/filtered_severus/severus_all.vcf'),
-]
-# NA12878_REVISION=1: VCF files of the revision runs (new eLaRodON, NanoVar 1.8.3, Sniffles2 2.7.1 with
-# --tandem-repeats) instead of the article ones
-REVISION_DIR = '/media/regina/MR_GREY/human/rel7/New_files/na12878_revision'
-if os.environ.get('NA12878_REVISION') == '1':
-    REVISION_VCFS = {'eLaRodON': f'{REVISION_DIR}/elarodon_revision/rel7_on_hg19_minimap2_mapont_sorted.40_all_LGRS.vcf',
-                     'NanoVar': f'{REVISION_DIR}/nanovar183/rel7_on_hg19_minimap2_mapont_sorted.40.nanovar.pass.vcf',
-                     'Sniffles2': f'{REVISION_DIR}/sniffles271_tr/sniffles271_tr_rel7_40_hg19.vcf'}
-    PROGRAMS = [(p, REVISION_VCFS.get(p, path)) for p, path in PROGRAMS]
-    SVABA = '/media/regina/MR_GREY/human/rel7/New_files/goldset_rebuild/svaba_compare_200/matched_svaba_variants.vcf'      # rebuilt reference set (goldset_rebuild/join_all_fixed.py)
+from pathlib import Path
+import argparse
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SVABA = str(REPO_ROOT / 'data/NA12878/NA12878_reference_set_2363.vcf')
+PROGRAMS = []
 TABLE_CHROM = 'chr1'
 EXCEL_CELL_MAX = 32767
 VCF_COLUMNS = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE']
@@ -355,4 +342,26 @@ def main(out_xlsx):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    parser = argparse.ArgumentParser(description='Tabulate calls and SvABA matches on one chromosome.')
+    parser.add_argument('output', help='Output XLSX file')
+    parser.add_argument('--truth', default=SVABA, help='Reference-set VCF')
+    parser.add_argument('--vcf', action='append', required=True, metavar='TOOL=FILE',
+                        help='Caller name and uncompressed VCF; repeat for each caller')
+    parser.add_argument('--chrom', default='chr1')
+    parser.add_argument('--as-published', action='store_true')
+    args = parser.parse_args()
+    SVABA = args.truth
+    TABLE_CHROM = args.chrom
+    FIXES = not args.as_published
+    for entry in args.vcf:
+        if '=' not in entry:
+            parser.error('--vcf requires TOOL=FILE')
+        tool, path = entry.split('=', 1)
+        if tool not in ('eLaRodON', 'NanoSV', 'NanoVar', 'SVIM', 'Sniffles2', 'Sniffles2_mosaic', 'Severus'):
+            parser.error('Unknown caller: ' + tool)
+        if not Path(path).is_file():
+            parser.error('VCF not found: ' + path)
+        PROGRAMS.append((tool, path))
+    if not Path(SVABA).is_file():
+        parser.error('Reference VCF not found: ' + SVABA)
+    main(args.output)
