@@ -6,72 +6,126 @@ minimap2, hg19) aligned to chromosome 22.
 
 The Dockerfile installs every tool in the version used in the article, each in its own conda environment:
 
-| Tool | Version | Command (as in the article) |
+| Tool | Version | Benchmark command |
 |---|---|---|
-| eLaRodON | ec95ede (caller fixes; release tag pending) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
+| eLaRodON | a54c9e8 (includes caller fixes ec95ede; release tag pending) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
 | Sniffles2 | 2.7.1 | `sniffles -i BAM -v OUT.vcf --tandem-repeats human_hg19_chr.trf.bed --threads N` |
 | SVIM | 2.0.0 | `svim alignment OUT BAM REF --sample NA12878` |
-| NanoVar | 1.8.3 | `nanovar -t N BAM REF OUT` |
+| NanoVar | 1.8.3 | `nanovar --debug -t N BAM REF OUT` |
 | NanoSV | 1.2.4 | `NanoSV BAM -b human_hg19_chr.bed -s samtools -t N -o OUT.vcf` |
 | Severus | 1.6 | `severus --target-bam BAM --out-dir OUT -t N` |
-| Truvari | 5.4.0 | `truvari bench --passonly --pctseq 0 --sizemin 200 --sizefilt 200 --sizemax 300000000` |
+| Truvari | 5.4.0 | `truvari bench --pctseq 0 --pctsize 0.7 --refdist 500 --bnddist 100 --sizemin 200 --sizefilt 200 --sizemax 300000000` |
 
-Exact package versions of each environment are listed in `envs/*.txt` (conda explicit lists; an environment
-can be recreated with `conda create -n NAME --file envs/NAME.txt`).
+The original environment snapshots are in `envs/*.txt`. Resolved packages for each actual
+image build are saved under `/opt/benchmark/environments/*.explicit.txt` inside that image.
+Use those build-specific files when recreating an environment.
 
-On one M. tuberculosis genome from the article (ERR12245887), the image gives the same number of VCF records as
-the runs of the article for SVIM (1219), NanoVar (164), NanoSV (272) and Severus (85). The six tools take about
-2 minutes on 4 threads.
+The test run below targets NA12878 chr22. For the purpose and limitations of the bundled
+M. tuberculosis CSV reference annotations, see the final section of this README.
 
-## 1. Get the image
+## 1. Build the image
 
-```bash
-# Build from the published pre-release commit; run from this benchmark directory.
-docker build --build-arg ELARODON_VERSION=fad19a6 -t elarodon-benchmark:revision .
-```
-
-## 2. Get the data
+Run from the repository root. The fixed test BAM and BAI must be staged once by the image
+maintainer; they are then included in the image, so end users do not need their own BAM.
+For a local build with an existing copy:
 
 ```bash
-mkdir -p data && cd data
-# Place NA12878_rel7_hg19_40x_chr22.bam and its .bam.bai index here.
-# Download URLs will be added when the dataset is deposited.
-# Alternatively, extract the test BAM from the full NA12878 BAM using make_test_bam.sh.
-# hg19 reference (UCSC, chr names), about 3 GB unpacked
-wget https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
-gunzip hg19.fa.gz
-docker run --rm -v "$PWD":/data elarodon-benchmark:revision micromamba run -n elarodon samtools faidx /data/hg19.fa
-cd ..
+bash benchmark/prepare_test_data.sh /path/to/NA12878_rel7_hg19_40x_chr22.bam
+docker build -t elarodon-benchmark:check benchmark
 ```
 
-The whole reference is needed even for one chromosome: split reads of chromosome 22 have supplementary
-alignments on other chromosomes, and the tools read the reference around them.
+`prepare_test_data.sh --url BASE_URL` can instead download the two files from a published
+GitHub Release or Zenodo asset directory. The public asset URL is pending deposition; do not
+assume a dataset URL exists yet. Both staging and Docker verify the committed SHA256 checksums.
+The 540 MiB BAM is excluded from ordinary Git history. The image includes it at
+`/opt/benchmark/data/NA12878_rel7_hg19_40x_chr22.bam` together with its BAI index.
 
-## 3. Run
+The Dockerfile currently pins eLaRodON to pre-release commit
+`a54c9e868661fa45ffc4e023b4177f6b08b6d3b3`; override `--build-arg ELARODON_VERSION=COMMIT_OR_TAG`
+when testing another published revision. The local benchmark scripts come from this build context.
+Resolved conda packages and the eLaRodON commit are recorded inside the image under
+`/opt/benchmark/environments/`.
 
-The run needs at least 16 GB of memory: eLaRodON takes up to 9.3 GB and NanoVar up to 11 GB on the test BAM.
+## 2. Run with your existing reference
+
+Use the complete UCSC hg19 FASTA (chromosome names with `chr`) matching the BAM, with its
+`.fai` index alongside it. No reference copy is needed. From the repository root:
 
 ```bash
-docker run --rm -v "$PWD/data":/data elarodon-benchmark:revision \
-    run_benchmark.sh --bam /data/NA12878_rel7_hg19_40x_chr22.bam --ref /data/hg19.fa \
-    --chrom chr22 --threads 4 --out /data/results
+bash benchmark/run.sh \
+    --ref /absolute/path/to/hg19.fa \
+    --out ./benchmark/data/results_check
 ```
 
-Steps (`--steps`, all by default):
+The launcher mounts the reference directory read-only and the result directory writable.
+It uses the bundled chr22 BAM and runs all six callers, the original ROC/PR evaluation and
+both Truvari comparisons. `--image IMAGE` selects a different image; default:
+`elarodon-benchmark:check`. At least 16 GB memory is needed (actual availability to Docker
+matters). Results belong to your user account. Use a new result directory for a new run.
 
-* `call` runs the six tools. VCF files: `results/vcf/<tool>.vcf`; logs, run time and peak memory:
-  `results/logs/<tool>.log`, `results/logs/<tool>.time`.
-* `evaluate` compares the calls with the golden set by the rules of Figure 5B and draws the curves:
-  `results/evaluation/metrics.tsv` (calls, found records, recall, AP, best F1 with its QUAL, precision and
-  recall, ROC AUC), `results/evaluation/roc_curves.png` (AUC in the legend), `results/evaluation/pr_curves.png`
-  (AP and best F1 in the legend, the best F1 point marked), `results/evaluation/pr_points.tsv`.
-  `--min-length 50|100|500` repeats the evaluation with another minimal SV length and the golden set built with
-  the same threshold.
-* `truvari` compares the calls with the full SvABA set of at least 200 bp in Truvari:
-  `results/truvari/truvari_summary.tsv`.
+Equivalent direct Docker command (replace the reference directory and filename):
 
-`--tools "eLaRodON Sniffles2"` runs only some of the tools. `--steps "evaluate truvari"` evaluates
-VCF files that are already in `results/vcf/` (for example, calls of another version of a tool).
+```bash
+mkdir -p benchmark/data/results_check
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v /absolute/path/to/reference_directory:/reference:ro \
+    -v "$PWD/benchmark/data/results_check":/data \
+    elarodon-benchmark:check run_benchmark.sh \
+    --ref /reference/hg19.fa --out /data --chrom chr22 --threads 4
+```
+
+## 3. Inspect results
+
+Paths below are relative to the directory given by `--out`:
+
+| File | Purpose |
+|---|---|
+| `evaluation/pr_curves.png` | Precision–recall curves, AP and best F1 (Figure 5B matching rules) |
+| `evaluation/roc_curves.png` | ROC curves and AUC (Figure 5B matching rules) |
+| `evaluation/metrics.tsv` | Calls, matches, recall, AP, best F1 and its QUAL threshold, ROC AUC |
+| `evaluation/pr_points.tsv` | Precision and recall at each QUAL threshold |
+| `truvari/golden_set/truvari_summary.tsv` | Truvari against the normalized golden set |
+| `truvari/full_svaba/truvari_summary.tsv` | Truvari against the full SvABA baseline |
+| `truvari/run_manifest.json` | Input hashes, reference index, parameters, versions and FILTER policy |
+| `vcf/TOOL.vcf` | Caller output used for evaluation (original caller FILTER values retained) |
+| `logs/TOOL.log`, `logs/TOOL.time` | Diagnostics, runtime and peak memory |
+
+Open PNG files in an image viewer and TSV files in a spreadsheet application with tab as
+the delimiter. Raw VCF record counts printed after calling include short events and may
+include paired breakends; `evaluation/metrics.tsv` counts calls after its size/type/region
+selection. Those counts need not be equal. Truvari applies its own record/event rules;
+its counts can also differ from the original Figure 5B evaluation.
+
+## 4. Two Truvari comparisons with one common policy
+
+Both comparisons use exactly the same prepared caller VCFs in `truvari/prepared/`, the same
+chr22 region and the same parameters: `--pctseq 0 --pctsize 0.7 --refdist 500 --bnddist 100
+--sizemin 200 --sizefilt 200 --sizemax 300000000`. Caller FILTER values are not used to
+exclude records, for any caller. eLaRodON normalization also does not select PASS records.
+NanoVar runs with `--debug` to retain its complete `*.nanovar.total.vcf`, which is used
+instead of `*.nanovar.pass.vcf`. An old NanoVar PASS-only output cannot be silently reused.
+Caller-internal discovery thresholds still differ; this policy removes VCF FILTER selection,
+not the algorithms' own discovery criteria.
+
+The golden-set source is normalized with the SvABA converter in typed mode and
+`--no-collapse`, retaining distinct selected events. On chr22 it produces 27 VCF records;
+the full pre-normalized SvABA baseline has 62 records on chr22. These are different
+baselines, so report the two result tables separately. The golden set depends on discovery
+by at least one compared caller; the full SvABA baseline does not use that selection.
+Truvari does not reproduce the Figure 5B tolerance rules even when the golden set is the same.
+
+Normalization retains the existing handling of eLaRodON linked records and INVTD and maps
+intrachromosomal TRL to INS, interchromosomal TRL to paired BND records. Original eLaRodON
+FILTER annotations remain available in `vcf/eLaRodON.vcf`; its normalized records have
+placeholder PASS annotations. Neither Truvari run uses those annotations for selection.
+
+`--steps "evaluate truvari"` reuses existing complete VCFs in the output directory.
+The runner fails if any selected caller VCF is missing or any comparison fails. Existing
+`truvari/` output is preserved: use a new output directory, copying the desired `vcf/`
+inputs there if reusing calls. `--tools "eLaRodON Sniffles2"` selects fewer callers.
+`--min-length 50|100|500 --steps "call evaluate"` runs the original evaluation at another
+length threshold. The paired Truvari stage requires 200 bp because the bundled full SvABA
+baseline is constructed at that threshold.
 
 ## Reference sets (`scripts/truth/`)
 
@@ -99,14 +153,13 @@ VCF files that are already in `results/vcf/` (for example, calls of another vers
 * precision and recall are calculated at every QUAL threshold; AP is the sum of precision values weighted by
   the increase in recall; in the ROC curve, golden-set records missed by a tool get QUAL = -1.
 
-With the genome-wide VCF files (the latest versions of the tools, full 40x BAM), `evaluate.py` gives the
+Historical evaluation of the genome-wide VCF files (full 40x BAM) gave the
 values of Table S5 (eLaRodON: 2228 of 2363 records found, AP 0.315, best F1 0.517, ROC AUC 0.871).
 
-For Truvari, eLaRodON calls are converted with `scripts/sv_to_std_vcf.py --mode typed --trl ins_intra
---pass-only`: a TRL within a chromosome is written as an insertion, a TRL between chromosomes as two junctions
+For Truvari, eLaRodON calls are converted with `scripts/sv_to_std_vcf.py --mode typed --trl ins_intra`: a TRL within a chromosome is written as an insertion, a TRL between chromosomes as two junctions
 (BND pairs), as SvABA and the other tools write them.
 
-## Expected result on chromosome 22
+## Historical genome-wide calls restricted to chromosome 22
 
 Calls of the genome-wide runs (full 40x BAM) with a breakpoint on chromosome 22, evaluated with
 `evaluate.py --chrom chr22` (`results_chr22_30oct/expected_from_genome_vcfs/`). Reference set: 27 records on
@@ -121,7 +174,30 @@ chromosome 22.
 | Sniffles2 | 166 | 18 | 0.073 | 0.200 | 0.338 |
 | NanoSV | 323 | 21 | 0.065 | 0.181 | 0.485 |
 
-## Result of the run on the chromosome 22 BAM
+## Observed run on 12 November 2026 (all caller FILTER values)
+
+The completed chr22 run produced both Truvari tables, archived in
+[`results/chr22_2026-11-12/`](results/chr22_2026-11-12/).
+
+| Tool | Golden TP / 27 | Golden precision | Full SvABA TP / 62 | Full SvABA precision |
+|---|---|---|---|---|
+| NanoSV | 21 | 0.046 | 22 | 0.048 |
+| NanoVar | 22 | 0.103 | 22 | 0.103 |
+| SVIM | 20 | 0.010 | 20 | 0.010 |
+| Severus | 20 | 0.127 | 20 | 0.127 |
+| Sniffles2 | 18 | 0.116 | 18 | 0.116 |
+| eLaRodON | 26 | 0.005 | 30 | 0.006 |
+
+These precision values count calls unmatched to the given reference as FP; an
+unmatched call is not independently proven false. The Figure 5B-style evaluation
+uses different matching rules: eLaRodON finds 24/27, AP 0.1672 and best F1 0.3636.
+The archived observed manifest has a null source commit. The final image must
+confirm the build-time commit file and record its image ID before publication.
+
+## Historical result of the run on the chromosome 22 BAM (PASS-only Truvari)
+
+These values predate the all-FILTER comparison and the latest eLaRodON run. They are
+retained as historical observations, not acceptance targets for the current runner.
 
 Run of 29.10.2026 on a laptop with 6 CPUs and 14 GB of memory, `--threads 4` (`call` step:
 `results_chr22_29oct/`); `evaluate` and `truvari` repeated on the same VCF files on 30.10.2026 with the current
@@ -147,8 +223,9 @@ AP depends on a few calls, so the test checks reproducibility, not the ranking o
 
 ## Notes
 
-* NanoSV marks all records with the MapQual filter (median mapping quality below 80; minimap2 reports at most
-  60), so Truvari with `--passonly` keeps none of them. The golden-set evaluation does not use FILTER.
+* In the historical run, all NanoSV records carried MapQual (median mapping quality below 80),
+  so PASS-only Truvari excluded them all. The current runner ignores FILTER for every caller
+  in both Truvari comparisons, as the original golden-set evaluation already did.
 * `run_benchmark.sh` finds the BED file of NanoSV with `importlib.util.find_spec`, because `import nanosv`
   starts its argument parser.
 * The test BAM contains only the alignments located on chromosome 22. Reads with the primary alignment on
@@ -181,3 +258,21 @@ The VCFs used for the full study are external inputs; the repository does not bu
 
 The pre-release build is not a published v1.1.0 release. Final image identifiers, dataset download
 links and DOI will be recorded after deposition and container validation.
+
+## M. tuberculosis data: purpose and limits
+
+`data/M_tuberculosis/curated_LGRs/` contains the manually curated comparison reference:
+38 sample CSVs and 2420 entries. Filenames identify ENA read accessions. The columns are
+`POS` (reference coordinate), `SVTYPE` (rearrangement category) and `SVLEN` (length;
+compound events can encode two lengths separated by `_`). Open a CSV in a spreadsheet
+to inspect a sample's reference events, their types, positions and lengths. These are
+reference annotations, not the output of the six callers and not validation of a new sample.
+
+The container includes these CSVs under `/opt/eLaRodON/data/M_tuberculosis/curated_LGRs/`
+and the analysis script `/opt/eLaRodON/scripts/mtub_roc_pr.py`. It does not include the
+large bacterial BAM/VCF inputs. The CSVs alone cannot reproduce ROC or PR curves; those
+also require the caller VCFs in the layout described above. The script produces
+`combined_ROC_curves_mtub_200.png`, `metrics_table_mtub.csv`, `pr_metrics_mtub.tsv`,
+`pr_points_mtub.tsv` and per-caller `aggregated_df_*.csv`; it does not currently produce
+a PR PNG. `run_benchmark.sh` is the NA12878/hg19 demo and must not be used to evaluate
+M. tuberculosis against the human reference sets.

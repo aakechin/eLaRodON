@@ -1,10 +1,10 @@
 # eLaRodON benchmark: eLaRodON and the five tools compared in the article, each in its own conda
 # environment with the version used in the article, plus Truvari and the evaluation scripts.
 #   docker build -t elarodon-benchmark .
-# ELARODON_VERSION is the release tag of eLaRodON on GitHub used in the article.
+# ELARODON_VERSION pins a published GitHub commit or release tag; see README.md.
 FROM mambaorg/micromamba:1.5.8
 
-ARG ELARODON_VERSION=v1.1.0
+ARG ELARODON_VERSION=a54c9e868661fa45ffc4e023b4177f6b08b6d3b3
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends git procps time \
     && rm -rf /var/lib/apt/lists/*
@@ -25,8 +25,19 @@ RUN micromamba create -y -n elarodon -c conda-forge -c bioconda python=3.10 biop
 RUN git clone https://github.com/aakechin/eLaRodON.git /opt/eLaRodON \
  && cd /opt/eLaRodON && git checkout ${ELARODON_VERSION}
 
+# The BAM is a release asset, staged locally by prepare_test_data.sh before building.
+# It is intentionally excluded from ordinary Git history.
+COPY test-data/ /opt/benchmark/data/
+RUN cd /opt/benchmark/data && sha256sum -c SHA256SUMS
 COPY scripts/ /opt/benchmark/
+COPY README.md /opt/benchmark/README.md
 RUN chmod +x /opt/benchmark/*.sh
+# Retain resolved environments and the exact source commit inside the published image.
+RUN mkdir -p /opt/benchmark/environments \
+ && for env in elarodon sniffles svim nanovar nanosv severus bench; do \
+      micromamba env export -n "$env" --explicit > "/opt/benchmark/environments/$env.explicit.txt" || exit 1; \
+    done \
+ && git -C /opt/eLaRodON rev-parse HEAD > /opt/benchmark/environments/elarodon.commit.txt
 ENV PATH=/opt/benchmark:$PATH
 WORKDIR /data
 ENTRYPOINT []
