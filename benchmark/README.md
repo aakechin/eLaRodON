@@ -4,20 +4,28 @@ This directory reproduces the comparison of eLaRodON with Sniffles2, SVIM, NanoV
 on the NA12878 cell line (Figure 5B of the article) on a small test dataset: NA12878 reads (ONT, rel7, 40x,
 minimap2, hg19) aligned to chromosome 22.
 
+## Version used by this benchmark
+
+The recorded run uses v1.1.0. The Dockerfile pins the equivalent caller code
+at commit `b1918e3`; it does not install the newer PyPI 1.1.1 package. Version
+1.1.1 fixes the handling of the final junction during merging, which can change
+calls. The recorded chr22 results below have not been recomputed with that fix.
+Use the default pin to reproduce them. To test another source version, override
+`--build-arg ELARODON_VERSION=TAG_OR_COMMIT` and use a new image/result directory.
+
 ## Files and availability
 
 The `v1.1.0` source archive contains this Dockerfile, all comparison scripts, the NA12878
 reference sets and the curated M. tuberculosis CSVs. It does **not** contain the 540 MiB
-chr22 BAM or its `.bam.bai` index. Those files are intended as separate assets of the
-[`v1.1.0` GitHub Release](https://github.com/aakechin/eLaRodON/releases/tag/v1.1.0).
-Check that both files appear under Assets before using the download command below;
-the tag by itself does not include them. The hg19 reference FASTA is external and is
+chr22 BAM or its `.bam.bai` index. Those files are available as separate assets of the
+[`v1.1.0` GitHub Release](https://github.com/aakechin/eLaRodON/releases/tag/v1.1.0),
+together with `SHA256SUMS`. The tag itself does not include them. The hg19 reference FASTA is external and is
 mounted read-only at run time. This guide builds the Docker image locally.
 
 Readers who only need the program can use the [root README](../README.md#quick-start)
 without downloading the BAM, reference sets or Docker image.
 
-The Dockerfile installs every tool in the version used in the article, each in its own conda environment:
+The Dockerfile pins the caller versions used for the recorded chr22 run, each in its own conda environment:
 
 | Tool | Version | Benchmark command |
 |---|---|---|
@@ -38,8 +46,7 @@ M. tuberculosis CSV reference annotations, see the final section of this README.
 
 ## 1. Build the image
 
-Download the tagged source and, once the Release assets are published, stage the BAM and
-BAI. `prepare_test_data.sh` checks both files against `test-data/SHA256SUMS`. Run from
+Download the tagged source and stage the published BAM and BAI assets. `prepare_test_data.sh` checks both files against `test-data/SHA256SUMS`. Run from
 the repository root:
 
 ```bash
@@ -50,7 +57,7 @@ bash benchmark/prepare_test_data.sh \
 docker build -t elarodon-benchmark:check benchmark
 ```
 
-The download command will work only after both assets appear under the GitHub Release.
+The script downloads the BAM and BAI and verifies them against the bundled checksum file.
 If you already have the BAM and its `.bam.bai` index, use
 `bash benchmark/prepare_test_data.sh /path/to/NA12878_rel7_hg19_40x_chr22.bam`
 instead. The Docker build verifies their checksums again.
@@ -158,7 +165,7 @@ baseline is constructed at that threshold.
   SV; 27 of them are on chromosome 22. `na12878_golden_set_min50.vcf`, `_min100.vcf`, `_min500.vcf`: the same
   with minimal lengths of 50, 100 and 500 bp (5518, 3101 and 1127 records). `na12878_golden_set_2336.vcf` and
   `na12878_golden_set_article_2181.vcf`: earlier versions, before the junctions between chromosomes were added
-  and before the fixes described in the answer to Reviewer 2, comment Q1.
+  and before corrections to deletion END coordinates and second-boundary types.
 * `svaba_full.typed.vcf.gz` — the full SvABA call set (SV and indel files) of at least 200 bp converted to the
   standard form with `scripts/sv_to_std_vcf.py`: 4049 SVs, 4125 VCF records; it does not depend on the compared
   tools.
@@ -218,8 +225,7 @@ These precision values count calls unmatched to the given reference as FP; an
 unmatched call is not independently proven false. The Figure 5B-style evaluation
 uses different matching rules: eLaRodON finds 24/27, AP 0.1706 and best F1 0.3684
 in this run. These chr22 results demonstrate the pipeline; the full-genome values
-reported in the article come from a separate analysis. Record the image ID before
-publishing a prebuilt image.
+reported in the article come from a separate analysis. Record the image ID when building an image for reuse.
 
 ## Historical result of the run on the chromosome 22 BAM (PASS-only Truvari)
 

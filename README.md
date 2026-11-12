@@ -1,482 +1,184 @@
-# **eLaRodON**
+# eLaRodON
 
-### A comprehensive pipeline for detection and analysis of large genomic rearrangements from Oxford Nanopore Technologies (ONT) sequencing data.
+eLaRodON detects genomic rearrangements from Oxford Nanopore read alignments.
+It combines CIGAR-derived insertions and deletions with split-read junctions,
+classifies rearrangements and reports sequence and genomic context in a VCF.
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+## Choose what to download
 
-## For reviewers: what to download
-
-The source version used for the revised benchmark is the GitHub tag
-[`v1.1.0`](https://github.com/aakechin/eLaRodON/tree/v1.1.0). The repository contains
-eLaRodON, the benchmark scripts, comparison reference sets and small curated tables.
-The 540 MiB NA12878 chromosome 22 BAM and its index are **not** in Git. Obtain them
-separately from the `v1.1.0` GitHub Release assets; if both files are not listed under
-Assets, the benchmark dataset is not yet available for download. The hg19 reference
-FASTA is also external. The Dockerfile builds the benchmark image locally.
-
-| If you need | Download | Then read |
+| Purpose | Files | Instructions |
 |---|---|---|
-| eLaRodON source and your own BAM analysis | [v1.1.0 source archive](https://github.com/aakechin/eLaRodON/archive/refs/tags/v1.1.0.zip) or clone the tag below | [Quick Start](#quick-start) |
-| NA12878 chr22 comparison | The same source, plus the BAM and BAI Release assets | [Benchmark guide](benchmark/README.md) |
-| M. tuberculosis curated reference tables | Already in `data/M_tuberculosis/curated_LGRs/` in the source archive | [Benchmark guide](benchmark/README.md#m-tuberculosis-data-purpose-and-limits) |
+| Analyze your own BAM with the current program | Install [eLaRodON 1.1.1 from PyPI](https://pypi.org/project/elarodon/1.1.1/) | [Quick start](#quick-start) |
+| Obtain the current program source | [v1.1.1 ZIP](https://github.com/aakechin/eLaRodON/archive/refs/tags/v1.1.1.zip) or clone the repository | [Run from source](#run-from-source) |
+| Reproduce the recorded NA12878 chr22 benchmark | [v1.1.0 source](https://github.com/aakechin/eLaRodON/archive/refs/tags/v1.1.0.zip), BAM, BAI and checksums from [Release v1.1.0](https://github.com/aakechin/eLaRodON/releases/tag/v1.1.0), plus a matching hg19 FASTA | [Benchmark guide](benchmark/README.md) |
+| Inspect curated reference annotations | Small reference files already included in `benchmark/scripts/truth/` and `data/M_tuberculosis/curated_LGRs/` | [Reference data and limits](benchmark/README.md#reference-sets-scriptstruth) |
 
-The current [`pip install elarodon`](https://pypi.org/project/elarodon/) installs the
-older PyPI release `0.1.3`, not this GitHub version. Use the source instructions below
-for `v1.1.0`. A matching PyPI package is planned separately.
+The pip package contains the program. Benchmark scripts and curated data are
+in the GitHub source archive. The 540 MiB BAM and its index are separate
+Release assets; GitHub's automatic source ZIP/TAR files do not contain them.
+The reference FASTA is supplied separately. The benchmark Docker image is
+built locally from `benchmark/Dockerfile`.
 
-## Table of Contents
-- [Overview](#overview-elarodon)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-  - [Dependencies](#dependencies)
-  - [PyPI status](#pypi-status)
-- [Input Requirements](#input-requirements)
-- [Algorithm By Steps](#algorithm-by-steps)
-- [Usage](#usage)
-  - [Minimal Working Example](#minimal-working-example)
-  - [Arguments](#arguments)
-  - [Detailed Usage](#detailed-usage)
-- [Output Files](#output-files)
-- [Troubleshooting](#troubleshooting)
-- [Citation](#citation)
-- [License](#license)
+## Quick start
 
-# Quick Start
-
-## Run the tagged source on your own data
-```bash
-git clone --depth 1 --branch v1.1.0 https://github.com/aakechin/eLaRodON.git
-cd eLaRodON
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python main.py -h
-
-# Supply your own coordinate-sorted, indexed BAM and matching indexed FASTA.
-# Install minimap2, samtools, bedtools and vcfanno on PATH before running.
-python main.py \
-    -dir ./results \
-    -bam /path/to/sample.bam \
-    -ref /path/to/hg38.fa \
-    -vcfanno /path/to/vcfanno \
-    -th 4
-```
-
-## Prerequisites:
-
-**Sorted & indexed BAM**: `samtools sort sample.bam` && `samtools index sample.bam`
-
-- Indexed reference: `samtools faidx hg38.fa`
-- External tools: `minimap2`, `samtools`, `bedtools`, `vcfanno` in PATH
-- Results in: `./results/*_all_LGRS.vcf`
-
-*For detailed usage, see sections below.*
-
-# Overview eLaRodON
-
-The **eLaRodON** pipeline performs detection and characterization of large genomic rearrangements through four integrated modules:
-
-[![](https://mermaid.ink/img/pako:eNpVkFFrgzAUhf9KuM-26NQa8zBodYXC6KAbe5gWCXptHZpIjNu62v--aDfK7lNOzndykpwhlwUCg4Pi7ZG8xKkgZpbJ0_blcZfzuka1J7PZ_bDjn2TU3UBWybusxER0-2tgNTHrqtaosCDGGEiU8Lo6iAaFzjbb53_kRnSodCXFyF2NaDKWQkjNNRYDiZMCy0pgpk8tZrlCs5195GV2q41_awWviex12-uBPCSv0ZqUVY17sMy7qgKYVj1a0KBq-CjhPMZT0EdsMAVmlqaK97VOIRUXE2u5eJOy-Usq2R-OwEped0b1bWGuElfcfNoNQVGgimQvNDAnmI4AdoYvYG7gzD0npAubuiH13MC34ATMC-bUufMdx_M8O3ToxYLvqdOe08C3zQSh6_shpYvLD7JJhTs?type=png)](https://mermaid.live/edit#pako:eNpVkFFrgzAUhf9KuM-26NQa8zBodYXC6KAbe5gWCXptHZpIjNu62v--aDfK7lNOzndykpwhlwUCg4Pi7ZG8xKkgZpbJ0_blcZfzuka1J7PZ_bDjn2TU3UBWybusxER0-2tgNTHrqtaosCDGGEiU8Lo6iAaFzjbb53_kRnSodCXFyF2NaDKWQkjNNRYDiZMCy0pgpk8tZrlCs5195GV2q41_awWviex12-uBPCSv0ZqUVY17sMy7qgKYVj1a0KBq-CjhPMZT0EdsMAVmlqaK97VOIRUXE2u5eJOy-Usq2R-OwEped0b1bWGuElfcfNoNQVGgimQvNDAnmI4AdoYvYG7gzD0npAubuiH13MC34ATMC-bUufMdx_M8O3ToxYLvqdOe08C3zQSh6_shpYvLD7JJhTs)
-
-## Detailed description of the algorithm
-
-The eLaRodON algorithm is a specialized computational pipeline designed for comprehensive detection of large genomic rearrangements (LGRs) from Oxford Nanopore sequencing data. Unlike conventional tools developed primarily for germline variants, eLaRodON incorporates several innovative features specifically optimized for identifying somatic LGRs, including those supported by single reads.
-
-**Input Processing**
-
-The algorithm begins by processing aligned sequencing data in BAM format. It performs chromosome-by-chromosome analysis to optimize memory usage, with an option to focus on specific genomic regions of interest. The tool only considers primary alignments containing complete mapping information to ensure analysis quality.
-
-### Core Detection Mechanism
-
-#### 1. Split-read Analysis:
-
-- Identifies reads with fragments mapped to different genomic locations
-- Detects strand changes and structural variants >50bp through CIGAR tag analysis
-- Extracts all insertions and deletions from primary alignments
-
-#### 2. Junction Characterization:
-
-##### Records all junction sites with their genomic features in two separate files:
-
-- fusions.csv: Contains genome region junctions
-- insertions.csv: Stores CIGAR-derived insertions
-
-##### For fusion events, combines split reads corresponding to:
-
-- Translocation boundaries (TRL)
-- Inversion breakpoints (INV)
-- Tandem duplication junctions (TD)
-
-### Variant Classification
-
-The algorithm employs a sophisticated classification system that:
-
-#### Merges Similar Events:
-
-- Combines fusions and insertions across genomic regions
-- Uses precise coordinates, strand orientation, and junction characteristics
-- Optional merging via companion script for mechanistic studies
-
-#### Insertion Sequence Analysis:
-
-- Maps CIGAR-derived insertion sequences to reference genome using minimap2
-- Reclassifies as tandem duplications when sequences map near original positions
-
-#### Structural Annotation:
-
-- Determines LGR types using strand orientation and junction characteristics
-- Evaluates four key genomic features for each rearrangement:
-
-    - Proximity to repeat sequences and mobile elements (via vcfanno)
-    - Presence of 2-5 nucleotide microhomology
-    - ≥80% sequence similarity over ≤35 nucleotide homeology between breakpoints
-    - Presence of novel inserted sequences not matching either breakpoint region
-
-### Quality Assessment
-
-eLaRodON incorporates several quality control metrics:
-
-#### New Sequence Pattern (NSP) Scoring:
-
-    score=∑x ∈[An, Tn,Gn,Cn]1L(x)−L(s)/100score=∑x ∈[An​, Tn​,Gn​,Cn​]​1L(x)​−L(s)/100
-
-    - Identifies homopolymeric tracts (≥4bp) in novel junction sequences
-    - Helps discriminate true rearrangements from artifacts
-
-### Output Generation
-
-The final output includes:
-
-#### 1. Comprehensive VCF File:
-
-- Special tags for LGRs sharing coordinates but differing in variant type
-- Annotations for:
-    - Intersection sequences (ISMFS tag)
-    - Novel inserted sequences (NSMFS tag)
-    - Microhomology/homeology patterns
-    - Repeat element proximity
-
-#### 2. Additional Outputs:
-
-- Raw junction calls for downstream analysis
-- Quality metrics for each detected variant
-- Intermediate files for debugging and method development
-
-### Technical Innovations
-
-Key algorithmic advancements include:
-
-- Treatment of multiple split-reads as single sequences for accurate two-boundary detection
-- Optional non-merging of similar LGRs to preserve mechanistic signatures
-- Memory-efficient chromosomal processing
-- Specialized handling of Nanopore-specific artifacts
-
-The tool demonstrates particular strength in identifying complex rearrangements that most existing algorithms miss, including multiple tandem duplications, non-reciprocal translocations, and inversions with two defined boundaries. Its performance has been validated across multiple datasets, showing superior accuracy compared to existing tools like Sniffles2, NanoSV, and SVIM, particularly for variants in repetitive regions and those with low read support.
-
-# Installation
-
-## Dependencies:
-
-**eLaRodON** requires the following external tools to be installed and available in your PATH:
-
-- minimap2: `conda install -c bioconda minimap2` or download from [GitHub](https://github.com/lh3/minimap2)
-
-- samtools & htslib: `conda install -c bioconda samtools`
-
-- bedtools: `conda install -c bioconda bedtools`
-
-- vcfanno: Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
-
-Python dependency versions are listed in [requirements.txt](requirements.txt).
-
-## PyPI status
-
-The PyPI package is currently version `0.1.3`; it does not contain the `v1.1.0`
-changes from this repository. For the revised analysis, clone the GitHub tag as
-shown in [Quick Start](#quick-start). After a matching package is published, its
-version will be documented here. The commands in [Quick Start](#quick-start) run the
-tagged source directly and do not install an `elarodon` command into the environment.
-
-# Input Requirements
-
-## BAM-file
-
-- **Sorted & Indexed**: Must be coordinate-sorted and indexed (e.g., with `samtools sort` and `samtools index`)
-- **Consistent Reference**: Must be aligned to the **exact same reference genome** as provided via `-ref`
-- **ONT-specific Alignment**: Optimal results with alignments that preserve soft-clipping (recommended aligners: `minimap2`)
-
-**Example**:
+Use Linux with Python 3.10, 3.11 or 3.12. Create a virtual environment on a
+filesystem that supports symbolic links (for example, your home directory):
 
 ```bash
-samtools index sample.bam
+python3 -m venv ~/envs/elarodon-1.1.1
+source ~/envs/elarodon-1.1.1/bin/activate
+python -m pip install elarodon==1.1.1
+elarodon --help
 ```
 
-## Reference genome
+Install the external tools listed below, then provide a coordinate-sorted,
+indexed BAM and its matching indexed reference FASTA:
 
-- **Indexed**: Must be indexed with `samtools faidx`
-- **Consistent**: Must match the reference used for BAM alignment
-
-## BED-file
-
-- **Format**: Standard 3-column BED format (chromosome, start, end) **without header**. **It is also recommended** to use a format with a 4th column with the name of the genomic element.
-- **Purpose**: Used to annotate variants with genomic features (repeats, genes, etc.)
-- **Example**:
-```bed
-chr1  10000  10400  (ALU)
-chr1  15000  15200  (LINE1)
-chr2  5000   5200   (SVA)
-```
-
-# Algorithm By Steps
-
-## Step 1: Breakpoint Detection (ONTLRcaller)
-- **Clipped Read Analysis**: Scans BAM for reads with soft/hard-clipped segments exceeding `--minimal-clipped-length`.
-- **Breakpoint Clustering**: Groups nearby breakpoints within `--dist-to-join-trl` distance into candidate Structural Variants (SVs).
-- **Initial Classification**: Separates candidates into Large Rearrangements (LRs) and potential Insertions (INS).
-
-## Step 2: Variant Consolidation (joinONTLRs)
-- **Proximity-based Joining**: Merges neighboring SVs within `--maximal-distance-join` bp into single events.
-- **Filtering**: Removes artifacts and low-confidence calls based on supporting read counts and mapping quality.
-- **Output Separation**: Generates two CSV files: LRs (deletions, duplications, inversions) and INS (insertion candidates).
-
-## Step 3: Insertion Resolution & Typing
-- **Local Assembly**: Extracts unaligned sequences from insertion candidates.
-- **Mini-assembly**: Performs local assembly of clipped sequences.
-- **Re-alignment**: Aligns assembled contigs to reference using `minimap2` to determine precise insertion points and structure.
-
-## Step 4: Variant Annotation & VCF Generation
-- **Type Determination**: Classifies variants based on breakpoint orientation, sequence homology, and alignment patterns.
-- **Microhomology Analysis**: Calculates microhomology/homeology at breakpoints.
-- **Repeat Annotation**: Annotates with nearby genomic features using provided BED file via `vcfanno`.
-- **VCF Export**: Generates `VCF 4.2` compliant output with comprehensive INFO fields.
-
-# Usage
-
-## Minimal Working Example
 ```bash
 elarodon \
-    -dir ./results_elarodon \
-    -bam sample.bam \
-    -ref hg38.fa \
-    -vcfanno path/to/vcfanno \
+    -dir /absolute/path/to/results \
+    -bam /absolute/path/to/sample.bam \
+    -ref /absolute/path/to/reference.fa \
+    -vcfanno /absolute/path/to/vcfanno \
     -th 4
 ```
+
+The final output is `sample_all_LGRS.vcf` in the result directory. Use a new
+result directory for each run. Use absolute paths without spaces: annotation
+commands pass paths to external tools through the shell.
+
+`python -m elarodon` accepts the same arguments as `elarodon`.
+
+## Dependencies and inputs
+
+Python dependencies are installed by pip and pinned in
+[requirements.txt](requirements.txt). Install these programs separately and
+make them available on `PATH`:
+
+- [minimap2](https://github.com/lh3/minimap2)
+- [samtools](https://www.htslib.org/) and HTSlib's `bgzip` and `tabix`
+- [bedtools](https://github.com/arq5x/bedtools2)
+- [vcfanno](https://github.com/brentp/vcfanno/releases)
+
+The BAM must be coordinate-sorted and indexed. The FASTA must match the
+assembly and chromosome names used for alignment and have a `.fai` index:
+
+```bash
+samtools sort -o sample.sorted.bam sample.bam
+samtools index sample.sorted.bam
+samtools faidx reference.fa
+```
+
+An optional annotation BED contains tab-separated chromosome, start and end
+coordinates, with an optional fourth column naming the element. Pass it with
+`-bed /absolute/path/to/repeats.bed`. Omitting the BED uses a temporary placeholder
+annotation file; it does not provide biological repeat annotations.
+
+## Run from source
+
+To obtain the source corresponding to the installed PyPI program:
+
+```bash
+git clone --depth 1 --branch v1.1.1 https://github.com/aakechin/eLaRodON.git
+cd eLaRodON
+python3 -m venv ~/envs/elarodon-source-1.1.1
+source ~/envs/elarodon-source-1.1.1/bin/activate
+python -m pip install -r requirements.txt
+python main.py --help
+```
+
+Replace `elarodon` with `python main.py` in the run command above. To install
+this source as a package instead, use `python -m pip install .`.
+
 ## Arguments
 
-### Core Arguments
+The spelling below follows the actual command-line parser. Run `elarodon --help`
+for the full list, including explicit intermediate filenames.
 
-| Parameter    | Required     | Description          |
-| :---        |    :----:   |          ---: |
-| `-bam, --bam_file`         | Yes         | BAM file            |
-| `-dir, --workdir` |	Yes |	Output directory |
-| `-ref, --ref-genome` |	Yes |	Reference genome FASTA|
-| `-vcfanno, --vcf-anno`	|Yes	|vcfanno executable path |
+| Argument | Default | Purpose |
+|---|---|---|
+| `-dir`, `--workdir` | required | Result directory |
+| `-bam`, `--bam-file` | required | Sorted, indexed BAM |
+| `-ref`, `--ref-genome` | required | Matching indexed reference FASTA |
+| `-vcfanno`, `--vcf_anno` | required | Path to the vcfanno executable |
+| `-bed`, `--bed_file` | omitted | Genomic annotation BED |
+| `-th`, `--threads` | 4 | Number of threads/processes |
+| `-len`, `--minimal-length` | 50 | Minimum insertion/deletion length in bp |
+| `-clip`, `--minimal-clipped-length` | 100 | Minimum clipped-part length in bp |
+| `-dist`, `--dist-to-join-trl` | 1000 | Maximum distance used to join translocation coordinates |
+| `-join`, `--maximal-distance-join` | 30 | Maximum breakpoint distance for junction merging |
+| `-dvlen`, `--div-length` | 0 | Region length for chromosome subdivision; 0 uses a whole chromosome |
+| `-cont`, `--continue` | all | Starting stage: `all`, `bam`, `join` or `def` |
+| `-out`, `--out_vcf` | automatic | Output VCF filename |
+| `-nrt_ins`, `--not_remove_trash_align` | false | Keep temporary insertion-alignment files |
+| `-nrt_anno`, `--not_remove_trash_anno` | false | Keep temporary annotation files |
 
-### Processing Parameters
-
-|Parameter	| Default	 | Required | Description |
-| :---        |    :----:   |  :----:   |        ---: |
-|`-bed, --bed-file`|	False | No	| Annotation BED file |
-|`-div, --divide-chroms`|	False | No |	Divide chromosome to analyze |
-|`-dvlen, --div-length`|	None | No |	Length of regions for division chromosome to analyze |
-|`-len, --minimal-length`|	50| No |Min variant length (bp)|
-|`-clip`, `--minimal-clipped-length`|	100	| No | Min clipped length (bp)|
-|`-dist`,`-dist-to-join-trl`|	1000	| No | Min clipped length (bp)|
-|`-join`,`-maximal-distance-join`|	30	| No | Max distance for fusion joining (bp)|
-|`-th, --threads` |	4	| No | CPU threads|
-|`-cont, --continue` |	all	| No | Name of stage for start: bam, join, def|
-
-About `--continue`:
-
-| Value   | Stage Name	 | Description     | Required Input Files for This Stage          |
-| :---       |    :----: |    :----:   |          ---: |
-| `all (default)`        | 	Full pipeline |  Runs all stages sequentially: `bam` → `join` → `def` | BAM file, reference genome  |
-| `bam` | ONTLRcaller |	**Initial detection**: Parses BAM file to identify clipped reads and cluster breakpoint |	BAM file |
-| `join` | joinONTLRs |	**Joining & filtering**: Joins nearby breakpoints, separates LRs from INS candidates |	CSV files from `bam` stage (`*junction_stat.csv`) |
-| `def` | define_type_create_vcf |	**Alignment & annotation**: Aligns INS sequences, classifies variants, creates final VCF | CSV files from `join` stage (`*LRs_join*.csv`, `*INS_join*.csv`) |
-
-For example:
-```bash
-# Re-run only the annotation with a different BED file
-elarodon -cont def -dir ./results -ref hg38.fa -vcfanno ./vcfanno -bed new_annotation.bed
-```
-
-### Special file names
-
-| Parameter   | Default	 | Required     | Description          |
-| :---       |    :----: |    :----:   |          ---: |
-| `-in, --input-files`        | auto  | No         | Regular expression for CSV files          |
-| `-lrs, --output-lrs` | auto |	No |	CSV output file for LGRs |
-| `-ins, --output-ins` | auto |	No |	CSV output file for INS |
-| `-sam, --sam_file` | auto |	No | SAM file with INS alignment |
-
-### Output Control
-| Parameter	| Default |	Description |
-| :---        |    :----:   |          ---: |
-|`-out, --out-vcf` |	auto|	VCF output filename|
-|`-nrt_ins, --not-remove-trash-align`|	False|	Keep temp alignment files|
-|`-nrt_anno, --not-remove-trash-anno` |	False	|Keep temp annotation files|
-
-**To view all parameters and their descriptions, you can use**:
+`--continue join` requires the junction CSVs from the BAM stage and runs
+joining, insertion alignment and annotation. `--continue def` requires the
+mapped-insertion and junction tables and runs classification and annotation.
+All four required arguments remain required when continuing a run. For example,
+to repeat annotation after an earlier completed run:
 
 ```bash
-elarodon -h
+elarodon -cont def \
+    -dir /absolute/path/to/previous_results \
+    -bam /absolute/path/to/sample.bam \
+    -ref /absolute/path/to/reference.fa \
+    -vcfanno /absolute/path/to/vcfanno \
+    -bed /absolute/path/to/new_annotation.bed
 ```
 
-## Detailed Usage
+## Analysis and output
 
-```bash
-elarodon \
-    -bam sample.bam \
-    -dir lr_results \
-    -ref hg38.fa \
-    -vcfanno ~/tools/vcfanno \
-    -bed repeats.bed \
-    -th 8 \
-```
+The program reads primary alignments and their supplementary-alignment tags,
+collects split-read junctions and CIGAR-derived insertions/deletions, and groups
+nearby calls. It aligns insertion sequences to the reference with minimap2,
+then classifies rearrangements and annotates their boundaries with vcfanno.
 
-# Output Files
+The result directory contains:
 
-## Main Outputs
+| File | Content |
+|---|---|
+| `*_all_LGRS.vcf` | Final rearrangements and annotations |
+| `elarodon.log` | Processing log and paths |
+| `supplementary/*.fusions.csv`, `*.insertions.csv` | Initial junction and insertion tables |
+| `supplementary/*LRs_join100*.csv`, `*INS_join100*.csv` | Joined calls and insertion-mapping intermediates; `join100` is part of the default filename |
 
-    *.junction_stat.LRs_join100.csv - Merged large rearrangements
+The VCF header defines the INFO and FORMAT fields, including rearrangement type,
+coordinates, supporting-read counts, mapping quality and sequence/context annotations.
+Some compound rearrangements use eLaRodON-specific representations. The
+[benchmark guide](benchmark/README.md) describes normalization before comparison
+with other callers. A single supporting read can produce a call; interpret
+support, QUAL and annotations together when selecting results for a study.
 
-    *.junction_stat.INS_join100.csv - Insertion calls
+## Versions and benchmark reproducibility
 
-    *_all_LGRS.vcf - Final annotated variants
-    
-## VCF Output
+Version **1.1.1** is available on PyPI and includes the fix that retains the
+last junction during merging, considers it for merging with a neighboring call,
+and handles progress reporting for an empty junction table. Installed-wheel
+and source runs produced the same DEL/INS records in a small synthetic test.
 
-eLaRodON enriches VCF output with extensive annotation in the **INFO** column:
+The recorded chr22 benchmark uses **v1.1.0**, including its earlier caller fixes.
+The additional 1.1.1 junction fix can change calls; the recorded benchmark has
+not been recomputed with 1.1.1. Use the v1.1.0 source and the pinned Docker build
+to reproduce those tables. See [benchmark/README.md](benchmark/README.md) for
+asset download commands, tool versions, comparison rules, example outputs and
+the limitations of the chromosome-only dataset.
 
-### 1. Basic Variant Information
-| Field   | Type     | Description          |
-| :---       |    :----: |    :----:   |  
-| `SVTYPE`        |  String         | Type of structural variant (DEL, INS, INV, etc.)          |
-| `CHROM2` | String |	Second chromosome involved (for translocations) |
-| `END` | Integer |	End position of the variant |
-| `SVLEN` | Integer | Length of variant (exact for DEL/INS, approximate for DUP/INV) |
-| `TDRN` | Integer | Number of tandem repeats (for duplications) |
+## Troubleshooting
 
-### 2. Breakpoint & Read Evidence
-| Field   | Type     | Description          |
-| :---       |    :----: |    :----:   |   
-| `J1, J2`        |  String         | Clipped side relative to breakpoint (L=left, R=right, ND=not defined)          |
-| `S1, S2` | String |	Strand orientation of supporting reads |
-| `D1, D2` | Integer |	Distance between breakpoints in paired evidence |
-| `RL1, RL2` | Integer | Lengths of supporting read fragments |
-| `SR` | Integer | Number of supporting reads |
-| `MQ` | Float | Median mapping quality of supporting reads |
-| `DP` | Integer | Total read depth at breakpoint |
-| `VAF` | Float | Variant allele frequency |
+- Missing executable: install the external tool and check its location with
+  `command -v minimap2`, `command -v bedtools` or `command -v vcfanno`.
+- Missing BAM/FASTA index: run `samtools index` or `samtools faidx` as above.
+- Reference mismatch: use the same assembly and chromosome naming as the BAM.
+- Permission or path errors: choose a writable result directory and paths without spaces.
+- Insufficient memory: reduce parallelism or use a machine with more available memory.
 
-### 3. Sequence Features
-| Field   | Type     | Description          |
-| :---       |    :----: |    :----:   |   
-| `MH, HOM`        |  Integer         | Length of microhomology/homeology at breakpoints          |
-| `MHS, HOMS` | String |	Microhomology/homeology sequences |
-| `MUTM, MUTV` | Float |	Median and variance of mapping errors in read fragments |
+## Citation and license
 
-### 4. Variant Classification Metrics
-| Field   | Type     | Description          |
-| :---       |    :----: |    :----:   |   
-| `SBLR, SBTRL, SBINV, SBTD`        |  String         | Evidence for alternative variant classifications   |
-| `ISN, NSN, SLN` | Integer |	Counts of different read mapping patterns |
-| `ISNMFS, NSNMFS` | Integer |	Length of most frequent overlapping/unmapped sequences |
-| `CN, IVN` | Integer | Reads with specific CIGAR patterns or inversions |
-| `MNF, PFF, PLF` | Integer | Homopolymeric tract pattern in novel sequence |
-| `NSP` | Integer | Metrics on rearrangement fragment distribution |
+Please cite the eLaRodON article, *eLaRodON: identification of large genomic
+rearrangements in Oxford Nanopore sequencing data*, and record the software
+version used in your analysis.
 
-### 5. Genomic Context Annotation
-
-*Applied only when BED file is provided via* `-bed`
-
-| Field   | Type     | Description          |
-| :---       |    :----: |    :----:   | 
-| `LERN, RERN`        |  String         | Nearest repeat/element to left/right breakpoint (external)s   |
-| `LIRN, RIRN` | Integer |	Nearest repeat/element within left/right segment (internal) |
-| `LCRN, RCRN` | Integer |	Repeat/element containing the breakpoint |
-| `LERD, RERD` | Integer | Distance to nearest external repeat |
-| `LIRD, RIRD` | Integer | Distance to nearest internal repeat |
-
-## Variant Type-Specific Tags
-
-The `ALT` field in VCF header defines all possible variant types:
-
-- `<DEL>`: Deletion (confirmed by multiple reads)
-- `<BND_DEL>`: Deletion (single-read evidence)
-- `<INS>`: Novel sequence insertion
-- `<TD>`: Tandem duplication
-- `<BND_TD>`: Possible tandem duplication
-- `<INV>`, `<BND_INV>`: Inversion (confirmed/unconfirmed)
-- `<INVTD>`, `<BND_INVTD>`: Inverted tandem duplication
-- `<TRL>`, `<BND_TRL>`: Translocation
-
-## Quality Filtering
-
-Variants are tagged in the `FILTER` column:
-
-- `PASS`: Confidently typed rearrangement
-- `FAIL`: Could not determine rearrangement type (or SV may be *not real*)
-
-## Expected VCF Example
-
-|#CHROM  |POS   |  ID  |    REF | ALT   |   QUAL | FILTER | INFO  | FORMAT	| SAMPLE_NAME |
-|    :----:   |    :----: |    :----: |    :----: |    :----: |    :----: |    :----: |    :----: |    :----: |    :----:   
-|chr12   |3456789| LR1|       N   | DEL   | 0.78  |  PASS   | SVTYPE=DEL;SVLEN=1200;CHROM2=chr12...| GT:DP:AD:VF|	0/1:330:1,329:0.0|
-|chr13   |4123456 | INS1 |     N  |  INS | 0.65 |   PASS |   SVTYPE=INS;SVLEN=350...| GT:DP:AD:VF	| 0/1:244:1,243:0.0 |
-
-
-# Troubleshooting
-
-## Common Issues
-
-### Missing dependencies:
-```bash
-Error: minimap2 not found in PATH
-```
-
-**Solution**: Install via bioconda or add to PATH
-
-### Memory errors:
-```bash
-Killed (process exited)
-```
-**Solution №1**: Reduce thread count or increase memory
-
-```bash
-Too many open files
-```
-**Solution №2**: 
-
-Run before eLaRodON: 
-```bash
-ulimit -n 4096
-```
-
-### BAM index missing:
-```bash
-    [E::idx_find_and_load] Could not retrieve index file for 'sample.bam'
-```
-
-**Solution**: Run samtools index sample.bam
-
-# Citation
-
-Please cite:
-
-    eLaRodON: identification of large genomic rearrangements in Oxford Nanopore sequencing data
-
-# License
-
-[MIT License](LICENSE) covers the original software and documentation in this
-repository. Third-party reference datasets retain their source terms.
-
-## Reproducible public-data benchmark
-
-The [benchmark guide](benchmark/README.md) describes the NA12878 chromosome 22 demo,
-image preparation with a bundled test BAM, use of an existing hg19 reference, output
-plots/tables and paired Truvari comparisons against the golden set and full SvABA.
-It also explains the bundled M. tuberculosis curated CSV reference annotations and
-which external VCF inputs are needed to reproduce the bacterial comparison curves.
+[MIT License](LICENSE) covers the original software and documentation.
+Third-party datasets retain their source terms.
