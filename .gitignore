@@ -1,1 +1,5 @@
 __pycache__
+benchmark/test-data/*.bam
+benchmark/test-data/*.bai
+benchmark/data/
+benchmark/results*/

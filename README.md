@@ -30,7 +30,7 @@
 pip install elarodon
 
 # 2. Install dependencies (via conda)
-conda install -c bioconda minimap2 samtools
+conda install -c bioconda minimap2 samtools bedtools
 # Download vcfanno: https://github.com/brentp/vcfanno/releases
 
 # 3. Run analysis
@@ -162,6 +162,8 @@ The tool demonstrates particular strength in identifying complex rearrangements 
 - minimap2: `conda install -c bioconda minimap2` or download from [GitHub](https://github.com/lh3/minimap2)
 
 - samtools & htslib: `conda install -c bioconda samtools`
+
+- bedtools: `conda install -c bioconda bedtools`
 
 - vcfanno: Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
 
@@ -471,3 +473,11 @@ Please cite:
 # License
 
 [MIT License](/LICENSE)
+
+## Reproducible public-data benchmark
+
+The [benchmark guide](benchmark/README.md) describes the NA12878 chromosome 22 demo,
+image preparation with a bundled test BAM, use of an existing hg19 reference, output
+plots/tables and paired Truvari comparisons against the golden set and full SvABA.
+It also explains the bundled M. tuberculosis curated CSV reference annotations and
+which external VCF inputs are needed to reproduce the bacterial comparison curves.
