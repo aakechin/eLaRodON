@@ -1,4 +1,5 @@
 __pycache__
+.venv/
 benchmark/test-data/*.bam
 benchmark/test-data/*.bai
 benchmark/data/

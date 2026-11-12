@@ -4,11 +4,24 @@ This directory reproduces the comparison of eLaRodON with Sniffles2, SVIM, NanoV
 on the NA12878 cell line (Figure 5B of the article) on a small test dataset: NA12878 reads (ONT, rel7, 40x,
 minimap2, hg19) aligned to chromosome 22.
 
+## Files and availability
+
+The `v1.1.0` source archive contains this Dockerfile, all comparison scripts, the NA12878
+reference sets and the curated M. tuberculosis CSVs. It does **not** contain the 540 MiB
+chr22 BAM or its `.bam.bai` index. Those files are intended as separate assets of the
+[`v1.1.0` GitHub Release](https://github.com/aakechin/eLaRodON/releases/tag/v1.1.0).
+Check that both files appear under Assets before using the download command below;
+the tag by itself does not include them. The hg19 reference FASTA is external and is
+mounted read-only at run time. This guide builds the Docker image locally.
+
+Readers who only need the program can use the [root README](../README.md#quick-start)
+without downloading the BAM, reference sets or Docker image.
+
 The Dockerfile installs every tool in the version used in the article, each in its own conda environment:
 
 | Tool | Version | Benchmark command |
 |---|---|---|
-| eLaRodON | b1918e3 (includes caller fixes 747bd4a; release tag pending) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
+| eLaRodON | GitHub tag `v1.1.0` (image pins source commit b1918e3, including caller fixes 747bd4a) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
 | Sniffles2 | 2.7.1 | `sniffles -i BAM -v OUT.vcf --tandem-repeats human_hg19_chr.trf.bed --threads N` |
 | SVIM | 2.0.0 | `svim alignment OUT BAM REF --sample NA12878` |
 | NanoVar | 1.8.3 | `nanovar --debug -t N BAM REF OUT` |
@@ -25,22 +38,26 @@ M. tuberculosis CSV reference annotations, see the final section of this README.
 
 ## 1. Build the image
 
-Run from the repository root. The fixed test BAM and BAI must be staged once by the image
-maintainer; they are then included in the image, so end users do not need their own BAM.
-For a local build with an existing copy:
+Download the tagged source and, once the Release assets are published, stage the BAM and
+BAI. `prepare_test_data.sh` checks both files against `test-data/SHA256SUMS`. Run from
+the repository root:
 
 ```bash
-bash benchmark/prepare_test_data.sh /path/to/NA12878_rel7_hg19_40x_chr22.bam
+git clone --depth 1 --branch v1.1.0 https://github.com/aakechin/eLaRodON.git
+cd eLaRodON
+bash benchmark/prepare_test_data.sh \
+    --url https://github.com/aakechin/eLaRodON/releases/download/v1.1.0
 docker build -t elarodon-benchmark:check benchmark
 ```
 
-`prepare_test_data.sh --url BASE_URL` can instead download the two files from a published
-GitHub Release or Zenodo asset directory. The public asset URL is pending deposition; do not
-assume a dataset URL exists yet. Both staging and Docker verify the committed SHA256 checksums.
+The download command will work only after both assets appear under the GitHub Release.
+If you already have the BAM and its `.bam.bai` index, use
+`bash benchmark/prepare_test_data.sh /path/to/NA12878_rel7_hg19_40x_chr22.bam`
+instead. The Docker build verifies their checksums again.
 The 540 MiB BAM is excluded from ordinary Git history. The image includes it at
 `/opt/benchmark/data/NA12878_rel7_hg19_40x_chr22.bam` together with its BAI index.
 
-The Dockerfile currently pins eLaRodON to pre-release commit
+The Dockerfile currently pins eLaRodON to source commit
 `b1918e3763eff74223ec31eae43e77896d48a03e`; override `--build-arg ELARODON_VERSION=COMMIT_OR_TAG`
 when testing another published revision. The local benchmark scripts come from this build context.
 The SVIM environment uses Matplotlib 3.8 because SVIM 2.0.0 calls `Legend.legendHandles`,
@@ -51,7 +68,12 @@ Resolved conda packages and the eLaRodON commit are recorded inside the image un
 ## 2. Run with your existing reference
 
 Use the complete UCSC hg19 FASTA (chromosome names with `chr`) matching the BAM, with its
-`.fai` index alongside it. No reference copy is needed. From the repository root:
+`.fai` index alongside it. The reference is not bundled or copied into the image. If you
+need to download one, UCSC provides
+[`hg19.fa.gz`](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz);
+uncompress it and run `samtools faidx hg19.fa`. For an exact comparison with the recorded
+run, check the FASTA checksum against `truvari/run_manifest.json` in the example results.
+From the repository root:
 
 ```bash
 bash benchmark/run.sh \
@@ -178,8 +200,10 @@ chromosome 22.
 
 ## Observed run on 12 November 2026 (all caller FILTER values)
 
-The completed chr22 run produced both Truvari tables, archived in
-[`results/chr22_2026-11-12/`](results/chr22_2026-11-12/).
+The completed chr22 run produced both Truvari tables. Its summary tables, plots and
+input manifest are bundled in [`example-results/chr22-v3/`](example-results/chr22-v3/).
+The source was commit `b1918e3` from the `v1.1.0` history; the benchmark scripts
+were those committed in `47a657a`. The SVIM log ended with `Done.`.
 
 | Tool | Golden TP / 27 | Golden precision | Full SvABA TP / 62 | Full SvABA precision |
 |---|---|---|---|---|
@@ -192,9 +216,10 @@ The completed chr22 run produced both Truvari tables, archived in
 
 These precision values count calls unmatched to the given reference as FP; an
 unmatched call is not independently proven false. The Figure 5B-style evaluation
-uses different matching rules: eLaRodON finds 24/27, AP 0.1672 and best F1 0.3636.
-The archived observed manifest has a null source commit. The final image must
-confirm the build-time commit file and record its image ID before publication.
+uses different matching rules: eLaRodON finds 24/27, AP 0.1706 and best F1 0.3684
+in this run. These chr22 results demonstrate the pipeline; the full-genome values
+reported in the article come from a separate analysis. Record the image ID before
+publishing a prebuilt image.
 
 ## Historical result of the run on the chromosome 22 BAM (PASS-only Truvari)
 
@@ -258,8 +283,9 @@ to override the bundled curated CSVs. `--mosaic-root=DIR` supplies optional mosa
 and `--lowsupport --lowsupport-root=DIR` supplies the additional low-support runs.
 The VCFs used for the full study are external inputs; the repository does not bundle those calls.
 
-The pre-release build is not a published v1.1.0 release. Final image identifiers, dataset download
-links and DOI will be recorded after deposition and container validation.
+The `v1.1.0` source tag identifies the code. Release assets are required to distribute
+the BAM/BAI. A prebuilt image and a DOI are optional separate publications; add their
+verified links here if they become available.
 
 ## M. tuberculosis data: purpose and limits
 

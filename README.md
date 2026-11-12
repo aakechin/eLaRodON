@@ -2,15 +2,35 @@
 
 ### A comprehensive pipeline for detection and analysis of large genomic rearrangements from Oxford Nanopore Technologies (ONT) sequencing data.
 
-![Python](https://img.shields.io/badge/Python-3.7%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+## For reviewers: what to download
+
+The source version used for the revised benchmark is the GitHub tag
+[`v1.1.0`](https://github.com/aakechin/eLaRodON/tree/v1.1.0). The repository contains
+eLaRodON, the benchmark scripts, comparison reference sets and small curated tables.
+The 540 MiB NA12878 chromosome 22 BAM and its index are **not** in Git. Obtain them
+separately from the `v1.1.0` GitHub Release assets; if both files are not listed under
+Assets, the benchmark dataset is not yet available for download. The hg19 reference
+FASTA is also external. The Dockerfile builds the benchmark image locally.
+
+| If you need | Download | Then read |
+|---|---|---|
+| eLaRodON source and your own BAM analysis | [v1.1.0 source archive](https://github.com/aakechin/eLaRodON/archive/refs/tags/v1.1.0.zip) or clone the tag below | [Quick Start](#quick-start) |
+| NA12878 chr22 comparison | The same source, plus the BAM and BAI Release assets | [Benchmark guide](benchmark/README.md) |
+| M. tuberculosis curated reference tables | Already in `data/M_tuberculosis/curated_LGRs/` in the source archive | [Benchmark guide](benchmark/README.md#m-tuberculosis-data-purpose-and-limits) |
+
+The current [`pip install elarodon`](https://pypi.org/project/elarodon/) installs the
+older PyPI release `0.1.3`, not this GitHub version. Use the source instructions below
+for `v1.1.0`. A matching PyPI package is planned separately.
 
 ## Table of Contents
 - [Overview](#overview-elarodon)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
   - [Dependencies](#dependencies)
-  - [Install eLaRodON via pip](#install-elarodon-via-pip)
+  - [PyPI status](#pypi-status)
 - [Input Requirements](#input-requirements)
 - [Algorithm By Steps](#algorithm-by-steps)
 - [Usage](#usage)
@@ -24,20 +44,21 @@
 
 # Quick Start
 
-## Install & run in 3 commands:
+## Run the tagged source on your own data
 ```bash
-# 1. Install eLaRodON
-pip install elarodon
+git clone --depth 1 --branch v1.1.0 https://github.com/aakechin/eLaRodON.git
+cd eLaRodON
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python main.py -h
 
-# 2. Install dependencies (via conda)
-conda install -c bioconda minimap2 samtools bedtools
-# Download vcfanno: https://github.com/brentp/vcfanno/releases
-
-# 3. Run analysis
-elarodon \
+# Supply your own coordinate-sorted, indexed BAM and matching indexed FASTA.
+# Install minimap2, samtools, bedtools and vcfanno on PATH before running.
+python main.py \
     -dir ./results \
-    -bam sample.bam \
-    -ref hg38.fa \
+    -bam /path/to/sample.bam \
+    -ref /path/to/hg38.fa \
     -vcfanno /path/to/vcfanno \
     -th 4
 ```
@@ -47,7 +68,7 @@ elarodon \
 **Sorted & indexed BAM**: `samtools sort sample.bam` && `samtools index sample.bam`
 
 - Indexed reference: `samtools faidx hg38.fa`
-- External tools: `minimap2`, `samtools`, `vcfanno` in PATH
+- External tools: `minimap2`, `samtools`, `bedtools`, `vcfanno` in PATH
 - Results in: `./results/*_all_LGRS.vcf`
 
 *For detailed usage, see sections below.*
@@ -167,38 +188,15 @@ The tool demonstrates particular strength in identifying complex rearrangements 
 
 - vcfanno: Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
 
-> 💡 Pro tip: see full list of program versions in [requirements.txt](/requirements.txt)
+Python dependency versions are listed in [requirements.txt](requirements.txt).
 
-## Install eLaRodON via pip
-```bash
-pip install elarodon
-```
+## PyPI status
 
-### Verify Installation
-
-```bash
-elarodon -h
-```
-## Clone the Repository
-
-### Also you can clone the repository and run without installation, but you'll still need to install the dependencies via pip 
-
-```bash
-git clone https://github.com/aakechin/eLaRodON.git
-cd eLaRodON
-python3 -m venv .elvenv
-source .elvenv/bin/activate
-pip install -r requirements.txt
-```
-And download `vcfanno`:
-
-Download the pre-built binary from the [release page](https://github.com/brentp/vcfanno/releases).
-
-### Verify Installation
-
-```bash
-python3 main.py -h
-```
+The PyPI package is currently version `0.1.3`; it does not contain the `v1.1.0`
+changes from this repository. For the revised analysis, clone the GitHub tag as
+shown in [Quick Start](#quick-start). After a matching package is published, its
+version will be documented here. The commands in [Quick Start](#quick-start) run the
+tagged source directly and do not install an `elarodon` command into the environment.
 
 # Input Requirements
 
@@ -472,7 +470,8 @@ Please cite:
 
 # License
 
-[MIT License](/LICENSE)
+[MIT License](LICENSE) covers the original software and documentation in this
+repository. Third-party reference datasets retain their source terms.
 
 ## Reproducible public-data benchmark
 

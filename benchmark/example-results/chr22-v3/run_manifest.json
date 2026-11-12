@@ -1,0 +1,111 @@
+{
+  "filter_policy": "all_records",
+  "chromosome": "chr22",
+  "reference": {
+    "path": "/reference/hg19.fa",
+    "sha256": "28505b4c05c493a039c65d502a515794d7a76f7293efd228beea4cf5eb5e98cb",
+    "bytes": 3199905909
+  },
+  "reference_fai": {
+    "path": "/reference/hg19.fa.fai",
+    "sha256": "0220bea531f51ddc32eb7e9637d3f23380c6b9ba0c900230cbb6883eed7f1b61",
+    "bytes": 3529
+  },
+  "truvari_version": "5.4.0",
+  "elarodon_commit": "b1918e3763eff74223ec31eae43e77896d48a03e",
+  "parameters": {
+    "pctseq": 0,
+    "pctsize": 0.7,
+    "refdist": 500,
+    "bnddist": 100,
+    "sizemin": 200,
+    "sizefilt": 200,
+    "sizemax": 300000000
+  },
+  "truth_sets": {
+    "golden_set": {
+      "path": "/data/truvari/truth/golden_set.typed.vcf.gz",
+      "sha256": "17a26dfd94ce1590cd4d407a81cb2172d0732f4fba91ff58ffe852b4cfe99aae",
+      "bytes": 56411
+    },
+    "full_svaba": {
+      "path": "/opt/benchmark/truth/svaba_full.typed.vcf.gz",
+      "sha256": "0c32181bbebd46054e355846690257b2227bd8fc6d8e69eb7e7c5a4f20425f6c",
+      "bytes": 98662
+    }
+  },
+  "golden_set_source": {
+    "path": "/opt/benchmark/truth/na12878_golden_set.vcf",
+    "sha256": "4a52f442f7b82dbdb8b8771b9738938f62df05aa3379808f807df8f1e7540276",
+    "bytes": 687304
+  },
+  "calls": {
+    "eLaRodON": {
+      "path": "/data/truvari/prepared/eLaRodON.vcf.gz",
+      "sha256": "f0044609219ba9741a0bb5a0e33f907bda2cecf6c61018fc21be698e7978c57f",
+      "bytes": 270627
+    },
+    "Sniffles2": {
+      "path": "/data/truvari/prepared/Sniffles2.vcf.gz",
+      "sha256": "6a1815eb55188ea4dea295f8fd767abbe5f817bc3d23328a1394d51f4b869fcf",
+      "bytes": 40757
+    },
+    "SVIM": {
+      "path": "/data/truvari/prepared/SVIM.vcf.gz",
+      "sha256": "73bbad526641246b91f51017043141554855e4de8f8c9621f00726844b77c37b",
+      "bytes": 751618
+    },
+    "NanoVar": {
+      "path": "/data/truvari/prepared/NanoVar.vcf.gz",
+      "sha256": "25e3f00f9e56ca2a5133e1d13417024065c8875e7d9daa93b9fe0f7ee9bc9ccb",
+      "bytes": 109173
+    },
+    "NanoSV": {
+      "path": "/data/truvari/prepared/NanoSV.vcf.gz",
+      "sha256": "98c60e696573b5b42fb90ed7cfd69ec3f366f882fce9d12e9c8affb9e8b02aaf",
+      "bytes": 278905
+    },
+    "Severus": {
+      "path": "/data/truvari/prepared/Severus.vcf.gz",
+      "sha256": "1be8a5821ea73c886bc0d68ff1463ed3a5c6caf0928d370fa8d6b223e67a8e8d",
+      "bytes": 28083
+    }
+  },
+  "original_calls": {
+    "eLaRodON": {
+      "path": "/data/vcf/eLaRodON.vcf",
+      "sha256": "d945be9ec36904d1d61c281570b9ad667ac031dada1c3aa361f9d63c685aaca3",
+      "bytes": 4683349
+    },
+    "Sniffles2": {
+      "path": "/data/vcf/Sniffles2.vcf",
+      "sha256": "1a8415a08b4194644f940a95c87653da4d63f3fac3d904886df0218835c793de",
+      "bytes": 199293
+    },
+    "SVIM": {
+      "path": "/data/vcf/SVIM.vcf",
+      "sha256": "1e104960845fdfca155414b954418cc1f260fb6dfb8d0bc9ce652846611a72c4",
+      "bytes": 3753881
+    },
+    "NanoVar": {
+      "path": "/data/vcf/NanoVar.vcf",
+      "sha256": "5dbbb01c0cf50dfa1ac537089e87e8afe5bddae325c6d50e67549af4c62052e8",
+      "bytes": 446795
+    },
+    "NanoSV": {
+      "path": "/data/vcf/NanoSV.vcf",
+      "sha256": "a2ac1ddb2302db7925d687e4d5dc7ed15f577e2a7099dd4c74a4cdb7666f8a0f",
+      "bytes": 1295500
+    },
+    "Severus": {
+      "path": "/data/vcf/Severus.vcf",
+      "sha256": "854b5a3487254b57d7e274d5affea98ac48e4f0b2320595ef2989ae8a54c7286",
+      "bytes": 144536
+    }
+  },
+  "runner": {
+    "path": "/opt/benchmark/run_benchmark.sh",
+    "sha256": "590969a1edaaee3b9ce3d831d7c6be4f84c3987dd3afb21b8286f072dc5d5134",
+    "bytes": 11839
+  }
+}
