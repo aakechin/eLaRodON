@@ -313,15 +313,14 @@ class JoinLR():
         alreadyJoinedFusionIDs=set()
         # Join fusions by searching for the first coordinate
         for i,fusion in enumerate(fusionsSorted):
-            if (i==len(fusionsSorted)-1 or
-                i in alreadyJoinedFusionIDs):
+            if i in alreadyJoinedFusionIDs:
                 continue
             joinedNum=self.allFusions[chrom][fusion]
             joinedFusion=fusion[:]
             fusionNum=i+1
             # Compare coordinates of the current fusion and several further
             while(True):
-                if fusionNum==len(fusionsSorted)-1:
+                if fusionNum>=len(fusionsSorted):
                     break
                 nextFusion=fusionsSorted[fusionNum]
                 # If chromosomes are the same
@@ -478,6 +477,8 @@ class JoinLR():
         rFile.close()
 
 def showPercWork(done,allWork):
+    if allWork == 0:
+        return
     percDoneWork=round((done/allWork)*100,2)
     sys.stdout.write("\r"+str(percDoneWork)+"%")
     sys.stdout.flush()

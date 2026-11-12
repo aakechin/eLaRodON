@@ -1,0 +1,5 @@
+include LICENSE README.md README_PYPI.md requirements.txt
+prune benchmark
+prune data
+prune .venv-pypi
+global-exclude *.orig *.pyc *.pyo

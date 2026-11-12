@@ -1,5 +1,9 @@
 __pycache__
 .venv/
+.venv-pypi/
+build/
+dist/
+*.egg-info/
 benchmark/test-data/*.bam
 benchmark/test-data/*.bai
 benchmark/data/

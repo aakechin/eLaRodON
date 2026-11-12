@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61", "wheel>=0.38"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elarodon"
+version = "1.1.1"
+description = "Detection and analysis of genomic rearrangements from Oxford Nanopore alignments"
+readme = "README_PYPI.md"
+requires-python = ">=3.10,<3.13"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Andrey Kechin"},
+    {name = "Regina Mikheeva", email = "mikheeva@yandex.ru"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dynamic = ["dependencies"]
+
+[project.scripts]
+elarodon = "elarodon.main:main"
+
+[project.urls]
+Homepage = "https://github.com/aakechin/eLaRodON"
+Documentation = "https://github.com/aakechin/eLaRodON#readme"
+Issues = "https://github.com/aakechin/eLaRodON/issues"
+Benchmark = "https://github.com/aakechin/eLaRodON/tree/v1.1.0/benchmark"
+
+[tool.setuptools]
+packages = ["elarodon"]
+package-dir = {elarodon = "."}
+include-package-data = false
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
