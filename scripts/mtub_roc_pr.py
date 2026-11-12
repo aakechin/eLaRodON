@@ -13,6 +13,13 @@ Usage: python3 mtub_roc_pr.py <output_dir> [--as-published] [--lowsupport]
 """
 import os
 import sys
+from pathlib import Path
+if len(sys.argv) < 2 or '--help' in sys.argv or '-h' in sys.argv:
+    print('Usage: python3 mtub_roc_pr.py OUTPUT --vcf-root=DIR [--csv-root=DIR] '
+          '[--mosaic-root=DIR] [--lowsupport] [--lowsupport-root=DIR] '
+          '[--elarodon-variants=LIST --elarodon-test-root=DIR] [--as-published]')
+    raise SystemExit(0 if '--help' in sys.argv or '-h' in sys.argv else 2)
+REPO_ROOT = Path(__file__).resolve().parents[1]
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
@@ -22,9 +29,9 @@ import pr_utils
 
 FIXES = '--as-published' not in sys.argv
 # Sniffles2 --mosaic runs (not in the published figure)
-MOSAIC_ROOT = '/media/regina/MR_GREY/human/rel7/New_files/mtub_sniffles_mosaic'
+MOSAIC_ROOT = str(REPO_ROOT / 'data/M_tuberculosis/vcf_mosaic')
 LOWSUPPORT = '--lowsupport' in sys.argv
-LOWSUPPORT_ROOT = '/media/regina/MR_GREY/human/rel7/New_files/mtub_lowsupport'
+LOWSUPPORT_ROOT = str(REPO_ROOT / 'data/M_tuberculosis/vcf_lowsupport')
 
 
 def path_arg(name, default):
@@ -1155,8 +1162,10 @@ def plot_combined_roc_curve(dataframes, titles, output_path):
 
 
 # Конфигурация путей
-csv_root = '/media/regina/MR_GREY/mtub/sens_compare/csv_checked_manually_INSDEL'
-vcf_root = path_arg('--vcf-root', '/media/regina/MR_GREY/mtub/sens_compare/vcf_all')
+csv_root = path_arg('--csv-root', str(REPO_ROOT / 'data/M_tuberculosis/curated_LGRs'))
+vcf_root = path_arg('--vcf-root', str(REPO_ROOT / 'data/M_tuberculosis/vcf'))
+if not os.path.isdir(vcf_root) or not os.path.isdir(csv_root):
+    raise SystemExit('VCF and curated CSV directories must exist; specify --vcf-root=DIR and --csv-root=DIR.')
 output_dir = sys.argv[1]
 os.makedirs(output_dir, exist_ok=True)
 
@@ -1199,7 +1208,7 @@ if LOWSUPPORT:
                               'output': 'aggregated_df_' + name})
 
 # R1.2 test versions of eLaRodON: --elarodon-variants baseline,fix_td  (folders elarodon_test_fixes/out_<variant>/)
-ELARODON_TEST_ROOT = '/home/regina/work/elarodon_test_fixes'   # MR_GREY is full; scripts in rel7/New_files/elarodon_test_fixes
+ELARODON_TEST_ROOT = path_arg('--elarodon-test-root', str(REPO_ROOT / 'data/M_tuberculosis/elarodon_variants'))
 variants_arg = [a for a in sys.argv if a.startswith('--elarodon-variants=')]
 if variants_arg:
     for variant in variants_arg[0].split('=', 1)[1].split(','):
@@ -1237,7 +1246,7 @@ for dataset in tool_datasets:
 # plot_combined_roc_curve(
 #     df_list,
 #     df_titles,
-#     output_path='/media/regina/KINGSTON/mtub/sens_compare/plots_ROC/combined_ROC_curves_mtub.png'
+#     output_path='combined_ROC_curves_mtub.png'
 # )
 
 metrics = []

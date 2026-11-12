@@ -11,10 +11,35 @@
 #        now it is taken from ALT, as for SVIM, NanoSV and Severus. An interchromosomal eLaRodON TRL (fragment
 #        c2:[END, END+SVLEN-1] inserted at c1:POS) has two junctions; both are compared.
 # Golden set rule is unchanged: a SvABA record >= MIN_LEN is kept if at least one of the six tools found it.
-#   python3 join_all_minlen.py 50 /home/regina/work/length_thresholds/svaba_compare_50
+# Usage: python3 make_na12878_reference_set.py 200 results --inputs inputs.json
 import sys
-MIN_LEN = int(sys.argv[1])
-OUT_DIR = sys.argv[2]
+import argparse
+import json
+from pathlib import Path
+
+parser = argparse.ArgumentParser(description='Rebuild the SvABA reference set from caller VCF directories.')
+parser.add_argument('min_length', type=int)
+parser.add_argument('output')
+parser.add_argument('--inputs', required=True, help='JSON mapping caller keys to input directories')
+args = parser.parse_args()
+MIN_LEN = args.min_length
+OUT_DIR = args.output
+if MIN_LEN < 1:
+    parser.error('min_length must be positive')
+config_path = Path(args.inputs).resolve()
+with config_path.open() as config_file:
+    input_directories = json.load(config_file)
+required_inputs = ('svaba_path', 'elarodon_path', 'svim_path', 'sniffles_path',
+                   'nanovar_path', 'nanosv_path', 'severus_path')
+for key in required_inputs:
+    if key not in input_directories:
+        parser.error('Missing input key: ' + key)
+    directory = Path(input_directories[key])
+    if not directory.is_absolute():
+        directory = config_path.parent / directory
+    if not directory.is_dir():
+        parser.error('Input directory not found: ' + str(directory))
+    input_directories[key] = str(directory.resolve())
 import re
 import os
 from multiprocessing import Pool
@@ -676,15 +701,7 @@ def filter_elarodon_only_matches(compared_results):
 
 
 os.makedirs(OUT_DIR, exist_ok=True)
-vcfs = {
-    'svaba_path': '/media/regina/MR_GREY/human/rel7/svaba',
-    'elarodon_path': '/media/regina/MR_GREY/human/rel7/New_files/na12878_revision/elarodon_revision',
-    'svim_path': '/media/regina/MR_GREY/human/rel7/vcf_hg19/filtered_svim',
-    'sniffles_path': '/media/regina/MR_GREY/human/rel7/New_files/na12878_revision/sniffles271_tr',
-    'nanovar_path': '/media/regina/MR_GREY/human/rel7/New_files/na12878_revision/nanovar183',
-    'nanosv_path':'/media/regina/MR_GREY/human/rel7/vcf_hg19/filtered_nanosv',
-    'severus_path':'/media/regina/MR_GREY/human/rel7/vcf_hg19/filtered_severus'
-}
+vcfs = input_directories
 
 global_svaba_variants, svaba_original_lines = process_folder(vcfs['svaba_path'], 'svaba')
 global_elarodon_variants, _ = process_folder(vcfs['elarodon_path'], 'elarodon')
