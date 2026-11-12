@@ -8,7 +8,7 @@ The Dockerfile installs every tool in the version used in the article, each in i
 
 | Tool | Version | Benchmark command |
 |---|---|---|
-| eLaRodON | a54c9e8 (includes caller fixes ec95ede; release tag pending) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
+| eLaRodON | b1918e3 (includes caller fixes 747bd4a; release tag pending) | `python3 main.py -dir OUT -bam BAM -ref REF -vcfanno vcfanno -th N` |
 | Sniffles2 | 2.7.1 | `sniffles -i BAM -v OUT.vcf --tandem-repeats human_hg19_chr.trf.bed --threads N` |
 | SVIM | 2.0.0 | `svim alignment OUT BAM REF --sample NA12878` |
 | NanoVar | 1.8.3 | `nanovar --debug -t N BAM REF OUT` |
@@ -41,8 +41,10 @@ The 540 MiB BAM is excluded from ordinary Git history. The image includes it at
 `/opt/benchmark/data/NA12878_rel7_hg19_40x_chr22.bam` together with its BAI index.
 
 The Dockerfile currently pins eLaRodON to pre-release commit
-`a54c9e868661fa45ffc4e023b4177f6b08b6d3b3`; override `--build-arg ELARODON_VERSION=COMMIT_OR_TAG`
+`b1918e3763eff74223ec31eae43e77896d48a03e`; override `--build-arg ELARODON_VERSION=COMMIT_OR_TAG`
 when testing another published revision. The local benchmark scripts come from this build context.
+The SVIM environment uses Matplotlib 3.8 because SVIM 2.0.0 calls `Legend.legendHandles`,
+which Matplotlib removed in 3.9; a Python traceback in the SVIM log stops the benchmark.
 Resolved conda packages and the eLaRodON commit are recorded inside the image under
 `/opt/benchmark/environments/`.
 

@@ -134,6 +134,10 @@ run_tool() {
         echo "[$(date '+%F %T')] $tool: failed (exit status ${status:-unknown}), see $OUT/logs/$tool.log"
         rm -f "$OUT/vcf/$tool.vcf" "$OUT/vcf/$tool.source.txt"
         return 1
+    elif [ "$tool" = SVIM ] && grep -q '^Traceback (most recent call last):' "$OUT/logs/$tool.log"; then
+        echo "[$(date '+%F %T')] SVIM: failed with a Python traceback, see $OUT/logs/SVIM.log"
+        rm -f "$OUT/vcf/$tool.vcf" "$OUT/vcf/$tool.source.txt"
+        return 1
     elif [ -n "$vcf" ] && [ -s "$vcf" ]; then
         cp "$vcf" "$OUT/vcf/$tool.vcf.tmp" || return 1
         mv "$OUT/vcf/$tool.vcf.tmp" "$OUT/vcf/$tool.vcf" || return 1

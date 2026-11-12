@@ -4,7 +4,7 @@
 # ELARODON_VERSION pins a published GitHub commit or release tag; see README.md.
 FROM mambaorg/micromamba:1.5.8
 
-ARG ELARODON_VERSION=a54c9e868661fa45ffc4e023b4177f6b08b6d3b3
+ARG ELARODON_VERSION=b1918e3763eff74223ec31eae43e77896d48a03e
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends git procps time \
     && rm -rf /var/lib/apt/lists/*
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git procps time
 RUN micromamba create -y -n elarodon -c conda-forge -c bioconda python=3.10 biopython=1.84 pandas=2.2.2 \
         pysam=0.22.1 toml=0.10.2 tqdm=4.66.5 minimap2 samtools bedtools vcfanno \
  && micromamba create -y -n sniffles -c conda-forge -c bioconda sniffles=2.7.1 \
- && micromamba create -y -n svim -c conda-forge -c bioconda svim=2.0.0 \
+ && micromamba create -y -n svim -c conda-forge -c bioconda svim=2.0.0 python=3.10 matplotlib=3.8 \
  && micromamba create -y -n nanovar -c conda-forge -c bioconda nanovar=1.8.3 \
  && micromamba create -y -n nanosv -c conda-forge -c bioconda nanosv=1.2.4 python=3.10 samtools \
  && micromamba create -y -n severus -c conda-forge -c bioconda severus=1.6 \

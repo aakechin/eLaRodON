@@ -130,6 +130,19 @@ if 'NanoSV' in str(vcf.filename):
         self.assertFalse(stale.exists())
         self.assertNotIn('records ->', p.stdout)
 
+    def test_svim_traceback_cannot_report_success(self):
+        bam = self.root / 'input.bam'
+        bam.touch()
+        Path(str(bam) + '.bai').touch()
+        self.executable('svim', '''#!/bin/bash
+printf '##fileformat=VCFv4.2\\n' > "$2/variants.vcf"
+printf 'Traceback (most recent call last):\\nAttributeError: plot failed\\n' >&2
+exit 0
+''')
+        p = self.run_runner('--tools', 'SVIM', '--steps', 'call', '--bam', str(bam))
+        self.assertNotEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertFalse((self.out / 'vcf/SVIM.vcf').exists())
+
 
 if __name__ == '__main__':
     unittest.main()
