@@ -161,7 +161,7 @@ elarodon -cont def \
 
 ## Algorithm and workflow
 
-[![eLaRodON workflow: ONTLRcaller, joinONTLRs, alignment_INS, variant classification and VCF output](docs/images/elarodon_workflow.svg)](docs/elarodon_workflow.mmd)
+[![](https://mermaid.ink/img/pako:eNpVkFFrgzAUhf9KuM-26NQa8zBodYXC6KAbe5gWCXptHZpIjNu62v--aDfK7lNOzndykpwhlwUCg4Pi7ZG8xKkgZpbJ0_blcZfzuka1J7PZ_bDjn2TU3UBWybusxER0-2tgNTHrqtaosCDGGEiU8Lo6iAaFzjbb53_kRnSodCXFyF2NaDKWQkjNNRYDiZMCy0pgpk8tZrlCs5195GV2q41_awWviex12-uBPCSv0ZqUVY17sMy7qgKYVj1a0KBq-CjhPMZT0EdsMAVmlqaK97VOIRUXE2u5eJOy-Usq2R-OwEped0b1bWGuElfcfNoNQVGgimQvNDAnmI4AdoYvYG7gzD0npAubuiH13MC34ATMC-bUufMdx_M8O3ToxYLvqdOe08C3zQSh6_shpYvLD7JJhTs?type=png)](https://mermaid.live/edit#pako:eNpVkFFrgzAUhf9KuM-26NQa8zBodYXC6KAbe5gWCXptHZpIjNu62v--aDfK7lNOzndykpwhlwUCg4Pi7ZG8xKkgZpbJ0_blcZfzuka1J7PZ_bDjn2TU3UBWybusxER0-2tgNTHrqtaosCDGGEiU8Lo6iAaFzjbb53_kRnSodCXFyF2NaDKWQkjNNRYDiZMCy0pgpk8tZrlCs5195GV2q41_awWviex12-uBPCSv0ZqUVY17sMy7qgKYVj1a0KBq-CjhPMZT0EdsMAVmlqaK97VOIRUXE2u5eJOy-Usq2R-OwEped0b1bWGuElfcfNoNQVGgimQvNDAnmI4AdoYvYG7gzD0npAubuiH13MC34ATMC-bUufMdx_M8O3ToxYLvqdOe08C3zQSh6_shpYvLD7JJhTs)
 
 The workflow diagram and its editable Mermaid source are included in the
 repository. The four modules are run by `main.py`:
