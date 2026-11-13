@@ -1,8 +1,27 @@
 # eLaRodON
 
+![Python 3.10–3.12](https://img.shields.io/badge/Python-3.10--3.12-blue)
+[![PyPI](https://img.shields.io/pypi/v/elarodon)](https://pypi.org/project/elarodon/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
 eLaRodON detects genomic rearrangements from Oxford Nanopore read alignments.
 It combines CIGAR-derived insertions and deletions with split-read junctions,
 classifies rearrangements and reports sequence and genomic context in a VCF.
+
+## Contents
+
+- [Choose what to download](#choose-what-to-download)
+- [Quick start](#quick-start)
+- [Dependencies and inputs](#dependencies-and-inputs)
+- [Run from source](#run-from-source)
+- [Arguments](#arguments)
+- [Algorithm and workflow](#algorithm-and-workflow)
+- [Analysis and output](#analysis-and-output)
+- [Reading the VCF](#reading-the-vcf)
+- [Quality and the new sequence pattern](#quality-and-the-new-sequence-pattern)
+- [Versions and benchmark reproducibility](#versions-and-benchmark-reproducibility)
+- [Troubleshooting](#troubleshooting)
+- [Citation and license](#citation-and-license)
 
 ## Choose what to download
 
@@ -113,6 +132,18 @@ for the full list, including explicit intermediate filenames.
 | `-nrt_ins`, `--not_remove_trash_align` | false | Keep temporary insertion-alignment files |
 | `-nrt_anno`, `--not_remove_trash_anno` | false | Keep temporary annotation files |
 
+You can also name intermediate files explicitly:
+
+| Argument | Purpose |
+|---|---|
+| `-in`, `--input-files` | Pattern selecting the junction CSV files to join |
+| `-lrs`, `--output-lrs` | Joined rearrangement CSV filename |
+| `-ins`, `--output-ins` | Joined insertion CSV filename |
+| `-n`, `--name` | Name of the insertion-alignment run |
+| `-sam`, `--sam_file` | Existing insertion-alignment SAM filename |
+| `-juncf`, `--junc_file` | Rearrangement table after insertion alignment |
+| `-insf`, `--ins_file` | Insertion table after insertion alignment |
+
 `--continue join` requires the junction CSVs from the BAM stage and runs
 joining, insertion alignment and annotation. `--continue def` requires the
 mapped-insertion and junction tables and runs classification and annotation.
@@ -127,6 +158,55 @@ elarodon -cont def \
     -vcfanno /absolute/path/to/vcfanno \
     -bed /absolute/path/to/new_annotation.bed
 ```
+
+## Algorithm and workflow
+
+[![eLaRodON workflow: ONTLRcaller, joinONTLRs, alignment_INS, variant classification and VCF output](docs/images/elarodon_workflow.svg)](docs/elarodon_workflow.mmd)
+
+The workflow diagram and its editable Mermaid source are included in the
+repository. The four modules are run by `main.py`:
+
+| Module | Input | Work performed | Output |
+|---|---|---|---|
+| [ONTLRcaller.py](ONTLRcaller.py) | Sorted BAM | Reads primary alignments, CIGAR operations and supplementary-alignment tags; records candidate junctions and insertions | Per-region junction and insertion CSVs |
+| [joinONTLRs.py](joinONTLRs.py) | Detection CSVs | Groups compatible junctions and insertions and aggregates read evidence | Joined rearrangement and insertion tables |
+| [alignment_INS.py](alignment_INS.py) | Joined calls and reference FASTA | Maps insertion sequences with minimap2 and recognizes nearby reference-derived sequence, including tandem duplications | Insertion alignments and updated calls |
+| [define_type_create_vcf_LRs.py](define_type_create_vcf_LRs.py) | Updated calls, reference and optional annotation BED | Assigns types, links related records, calculates junction features and annotates genomic context with vcfanno | Annotated VCF |
+
+### Detection and read support
+
+Split-read junctions describe how adjacent fragments of the same read align to
+the reference: their chromosomes, positions, strands and the sides adjoining
+the junction. CIGAR insertions and deletions are collected separately. The
+minimum insertion/deletion length defaults to 50 bp; the article's 200-bp
+benchmark cutoff is an analysis choice, rather than this detection default.
+
+The split-read analysis uses supplementary alignments recorded in the primary
+alignment's `SA` tag. A read must have at least 100 clipped bases by default;
+short supplementary fragments are excluded. Compatible junctions from different
+reads are grouped using their orientations and coordinates, with a default
+breakpoint distance of 30 bp. CIGAR insertions use their own position and
+length criteria. Each read is counted once per grouped record.
+
+### One-boundary and two-boundary rearrangements
+
+A read that spans both junctions can resolve a rearranged fragment and its two
+boundaries. A read covering only one junction gives a boundary representation,
+often named `BND_*`. This distinction concerns the alignment pattern: a BND call
+can have several supporting reads, and a two-boundary call can have only one.
+
+Related one-boundary and two-boundary records can remain separate and be linked
+by `SBLR`, `SBTRL`, `SBINV` or `SBTD`. Those links indicate possible alternative
+representations or a second boundary; they are not additional independent
+experimental confirmations.
+
+### Junction and genomic context
+
+For each rearrangement, eLaRodON records overlapping or unaligned sequence
+between read fragments, microhomology and homeology at the breakpoints, and
+read-support features. With an annotation BED, it also reports repeats or other
+named genomic elements containing or flanking each boundary. The meaning of an
+annotation depends on the BED supplied by the user.
 
 ## Analysis and output
 
@@ -151,6 +231,96 @@ Some compound rearrangements use eLaRodON-specific representations. The
 with other callers. A single supporting read can produce a call; interpret
 support, QUAL and annotations together when selecting results for a study.
 
+## Reading the VCF
+
+The VCF combines the standard columns with eLaRodON-specific tags. Its header
+lists the fields emitted by the installed version. The tables below explain
+the main groups; tags can be absent or contain a missing value when the
+corresponding evidence is unavailable.
+
+### Coordinates and rearrangement types
+
+| Field | Meaning |
+|---|---|
+| `SVTYPE` | Native eLaRodON rearrangement type |
+| `CHROM2`, `END` | Chromosome and coordinate of the other boundary |
+| `SVLEN` | Insertion/deletion length or an estimated rearranged-fragment length |
+| `TDRN` | Tandem repeat count for duplication calls |
+| `J1`, `J2` | Side of each read fragment adjoining the junction: L, R or ND |
+| `S1`, `S2` | Strand orientation of the fragments |
+| `D1`, `D2` | Distances used to characterize the junction pattern |
+| `RL1`, `RL2` | Read-fragment lengths |
+
+| Type | Interpretation |
+|---|---|
+| `DEL`, `BND_DEL` | Deletion or a deletion-like boundary |
+| `INS` | Insertion relative to the reference |
+| `TD`, `BND_TD` | Tandem duplication or a tandem-duplication-like boundary |
+| `INV`, `BND_INV` | Inversion or an inversion-like boundary |
+| `INVTD`, `BND_INVTD` | Inverted tandem duplication or its boundary representation |
+| `TRL`, `BND_TRL` | Translocation or a junction connecting the reported genomic regions |
+
+Native records can describe different evidence patterns for the same event.
+For comparisons with other callers, use an explicit normalization and matching
+procedure, as in the [benchmark scripts](benchmark/scripts/).
+
+### Read support and sequence features
+
+| Field | Meaning |
+|---|---|
+| `SR` | Number of supporting reads |
+| `MQ` | Mapping-quality measure of the supporting fragments |
+| `DP`, `VAF` | Read depth and estimated variant allele frequency |
+| `MH`, `MHS` | Microhomology length and sequence |
+| `HOM`, `HOMS` | Homeology length and sequence |
+| `MUTM`, `MUTV` | Median and variance of read-fragment mapping-error measures |
+| `ISN`, `ISNMFS` | Count and stored length measure for overlapping read fragments |
+| `NSN`, `NSNMFS` | Count and stored length measure for unaligned sequence between fragments |
+| `SLN` | Number of reads whose fragments meet without an overlap or intervening sequence |
+| `CN`, `IVN` | CIGAR and inversion evidence counts |
+| `NSP` | Homopolymer-tract count component of the new sequence pattern score |
+| `MNF`, `PFF`, `PLF` | Rearrangement-fragment number and first/last-fragment summary measures |
+| `SBLR`, `SBTRL`, `SBINV`, `SBTD` | Links to a possible second boundary or related rearrangement representation |
+
+The sample `FORMAT` fields include `GT`, `DP`, `AD` and `VF`. Read these together
+with the INFO annotations and the actual supporting alignments when interpreting
+a candidate. eLaRodON does not establish whether an event is somatic or germline.
+
+### Annotations from the BED file
+
+| Field | Meaning |
+|---|---|
+| `LERN`, `RERN` | Names of the nearest external elements at the left/right boundary |
+| `LIRN`, `RIRN` | Names of the nearest internal elements |
+| `LCRN`, `RCRN` | Names of elements containing the boundary |
+| `LERD`, `RERD` | Distances to the nearest external elements |
+| `LIRD`, `RIRD` | Distances to the nearest internal elements |
+
+For example, a RepeatMasker BED makes these repeat annotations; another BED can
+supply another class of genomic features. Without a biological annotation BED,
+these fields do not supply a repeat classification.
+
+## Quality and the new sequence pattern
+
+`QUAL` combines read support, mapping and junction features. `FILTER=PASS` means
+that eLaRodON assigned a rearrangement type; `FAIL` means no type was assigned.
+A PASS label alone does not establish experimental validity or a somatic origin.
+
+The new sequence pattern concerns unaligned sequence between adjacent read
+fragments. For a sequence `s`, count runs of the same nucleotide that are at
+least four bases long, then subtract one per 100 bases of sequence:
+
+```text
+score(s) = number of homopolymer tracts of length >= 4 - length(s) / 100
+```
+
+For example, `ACGTTTTTGCAAAAGT` is 16 bases long and contains two such tracts
+(`TTTTT` and `AAAA`), giving `2 - 16/100 = 1.84`. For aggregated calls, the stored
+score is calculated as `NSP - NSNMFS/100`; `NSP` alone is the count component,
+not the final length-adjusted score. If this score is above zero, QUAL is divided
+by two. The feature is an annotation of a pattern associated with artifacts,
+not a test that proves a particular rearrangement false.
+
 ## Versions and benchmark reproducibility
 
 Version **1.1.1** is available on PyPI and includes the fix that retains the
@@ -174,11 +344,21 @@ the limitations of the chromosome-only dataset.
 - Permission or path errors: choose a writable result directory and paths without spaces.
 - Insufficient memory: reduce parallelism or use a machine with more available memory.
 
+For repeated failures, include the command, software version and relevant
+`elarodon.log` messages in a [GitHub issue](https://github.com/aakechin/eLaRodON/issues).
+For `Too many open files`, check the process file-descriptor limit with
+`ulimit -n`; on systems where it is permitted, `ulimit -n 4096` raises the soft
+limit for the current shell.
+
 ## Citation and license
 
 Please cite the eLaRodON article, *eLaRodON: identification of large genomic
 rearrangements in Oxford Nanopore sequencing data*, and record the software
 version used in your analysis.
+
+The [Zenodo software record](https://doi.org/10.5281/zenodo.19177352) provides
+an archival citation. Record the version of the archive actually used, alongside
+the GitHub tag or commit and the installed package version.
 
 [MIT License](LICENSE) covers the original software and documentation.
 Third-party datasets retain their source terms.

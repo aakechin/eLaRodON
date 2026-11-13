@@ -1,0 +1,6 @@
+graph TD
+    A[ONTLRcaller] -->|Raw calls| B[joinONTLRs]
+    B -->|Joined junctions| C[alignment_INS]
+    B -->|Insertions| C
+    C -->|Insertion mappings and junctions| D[define_type_create_vcf_LRs]
+    D -->|Final output| E[VCF file]
